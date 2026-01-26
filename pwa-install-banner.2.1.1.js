@@ -85,7 +85,18 @@
     function getLocalizedText(key) {
         const lang = getLang();
         const translations = i18n[lang] || i18n.en;
-        return translations[key] || i18n.en[key] || '';
+        const text = translations[key];
+        
+        // If key doesn't exist in current language, try English fallback
+        if (text === undefined || text === null) {
+            const fallback = i18n.en[key];
+            if (fallback !== undefined && fallback !== null) {
+                return fallback;
+            }
+        }
+        
+        // Return text or empty string (never undefined)
+        return text || '';
     }
 
     /**
@@ -355,7 +366,7 @@
         // Logo
         const logo = document.createElement('img');
         logo.src = CONFIG.logoUrl;
-        logo.alt = getLocalizedText('appName');
+        logo.alt = getLocalizedText('appName') || 'MachiBet';
         logo.style.cssText = `
             border: 2px solid rgba(255,255,255,0.3);
             border-radius: 8px;
@@ -377,7 +388,9 @@
         `;
 
         const title = document.createElement('h2');
-        title.innerHTML = `${getLocalizedText('appName')} | ${getLocalizedText('title')}`;
+        const appName = getLocalizedText('appName') || 'MachiBet';
+        const titleText = getLocalizedText('title') || 'Official App';
+        title.innerHTML = `${appName} | ${titleText}`;
         title.style.cssText = `
             font-size: 13px;
             font-weight: 600;
@@ -387,7 +400,8 @@
         `;
 
         const description = document.createElement('p');
-        description.innerHTML = getLocalizedText('description');
+        const descText = getLocalizedText('description') || 'Sports app, Entertainment app<br>Play anytime, anywhere';
+        description.innerHTML = descText;
         description.style.cssText = `
             font-size: 11px;
             font-weight: 400;
@@ -405,7 +419,8 @@
         // Install button
         const installBtn = document.createElement('button');
         installBtn.id = 'pwa-install-button';
-        installBtn.innerHTML = getLocalizedText('installText');
+        const installText = getLocalizedText('installText') || 'Install';
+        installBtn.innerHTML = installText;
         installBtn.style.cssText = `
             font-size: 13px;
             font-weight: 600;
