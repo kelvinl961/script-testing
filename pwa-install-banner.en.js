@@ -52,7 +52,7 @@
     // For main script: null (auto-detect)
     // For .en.js: "en" (hardcoded)
     // For .bn.js: "bn" (hardcoded)
-    let currentLang = null;
+    let currentLang = "en";
     let CONFIG = Object.assign({}, DEFAULT_CONFIG);
     let isInitialized = false;
     
