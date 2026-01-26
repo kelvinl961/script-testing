@@ -3,7 +3,7 @@
     'use strict';
 
     // Script version - increment this when making changes to force cache refresh
-    const SCRIPT_VERSION = '2.1.5';
+    const SCRIPT_VERSION = '2.1.6';
     
     // Default configuration
     const DEFAULT_CONFIG = {
@@ -225,7 +225,7 @@
                 start_url: window.location.origin + '/',
                 display: 'standalone',
                 background_color: '#ffffff',
-                theme_color: '#016ecf',
+                theme_color: '#ffffff',
                 orientation: 'portrait-primary',
                 icons: [
                     {
