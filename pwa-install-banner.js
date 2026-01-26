@@ -4,8 +4,7 @@
 
     const CONFIG = {
         bannerId: 'pwa-install-banner',
-        logoUrl: 'https://mcb777.com/favicon.ico', // ICO files may not work - browsers prefer PNG
-        // Alternative: Use PNG if available: 'https://mcb777.com/icon-192x192.png'
+        logoUrl: 'https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/favicon-1.png', // PNG icon for PWA
         appName: 'MachiBet',
         appNameBn: 'MachiBet',
         title: 'Official App',
@@ -147,19 +146,15 @@
                 icons: [
                     {
                         src: CONFIG.logoUrl,
-                        sizes: 'any',
-                        type: 'image/x-icon',
+                        sizes: '192x192',
+                        type: 'image/png',
                         purpose: 'any'
                     },
                     {
                         src: CONFIG.logoUrl,
-                        sizes: '192x192',
-                        type: 'image/x-icon'
-                    },
-                    {
-                        src: CONFIG.logoUrl,
                         sizes: '512x512',
-                        type: 'image/x-icon'
+                        type: 'image/png',
+                        purpose: 'any'
                     }
                 ],
                 categories: ['entertainment', 'sports', 'games']
