@@ -178,13 +178,13 @@
         // Verify icon is accessible
         const iconImg = new Image();
         iconImg.onload = function() {
-            console.log('✅ PWA Install Banner: Icon loaded successfully:', CONFIG.logoUrl);
-            console.log('✅ PWA Install Banner: Icon dimensions:', iconImg.width + 'x' + iconImg.height);
+            console.log('PWA Install Banner: Icon loaded successfully:', CONFIG.logoUrl);
+            console.log('PWA Install Banner: Icon dimensions:', iconImg.width + 'x' + iconImg.height);
         };
         iconImg.onerror = function() {
-            console.error('❌ PWA Install Banner: Icon FAILED to load:', CONFIG.logoUrl);
-            console.error('❌ PWA Install Banner: Check if URL is accessible and CORS is enabled');
-            console.error('❌ PWA Install Banner: Browser will show default icon');
+            console.error('PWA Install Banner: Icon FAILED to load:', CONFIG.logoUrl);
+            console.error('PWA Install Banner: Check if URL is accessible and CORS is enabled');
+            console.error('PWA Install Banner: Browser will show default icon');
         };
         iconImg.src = CONFIG.logoUrl;
         
@@ -507,7 +507,7 @@
         
         // Create a visual modal instead of alert for better UX
         createInstallModal({
-            title: '🧪 Test Mode - Install Simulation',
+            title: 'Test Mode - Install Simulation',
             message: `In production (HTTPS with PWA manifest), clicking "Install Now" would automatically trigger the native browser install prompt.\n\n` +
                     `To enable real installation:\n` +
                     `• Deploy to HTTPS server\n` +
@@ -519,7 +519,7 @@
                 console.log('Test: User accepted install (simulated)');
                 hideBanner();
                 dismissBanner();
-                showSuccessMessage('✅ Installation simulated! In production, the PWA would now be installed.');
+                showSuccessMessage('Installation simulated! In production, the PWA would now be installed.');
             }
         });
     }
@@ -599,16 +599,16 @@
                      `Note: iOS requires manual installation for security.`;
         } else {
             // Standard Safari - must use share button
-            message = `📱 Install on iOS:\n\n` +
+            message = `Install on iOS:\n\n` +
                      `1. Tap the Share button (square with arrow ↑) at the bottom of Safari\n` +
                      `2. Scroll down in the share menu\n` +
                      `3. Tap "Add to Home Screen"\n` +
                      `4. Tap "Add" to confirm\n\n` +
-                     `⚠️ Note: iOS requires manual installation. Auto-install is not possible due to Apple security restrictions.`;
+                     `Note: iOS requires manual installation. Auto-install is not possible due to Apple security restrictions.`;
         }
         
         createInstallModal({
-            title: '📱 Install MachiBet App',
+            title: 'Install MachiBet App',
             message: message,
             buttonText: 'I Understand',
             onConfirm: () => {
