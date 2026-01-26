@@ -3,7 +3,7 @@
     'use strict';
 
     // Script version - increment this when making changes to force cache refresh
-    const SCRIPT_VERSION = '2.1.7';
+    const SCRIPT_VERSION = '2.1.8';
     
     // Default configuration
     const DEFAULT_CONFIG = {
