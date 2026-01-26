@@ -3,7 +3,7 @@
     'use strict';
 
     // Script version - increment this when making changes to force cache refresh
-    const SCRIPT_VERSION = '2.1.8';
+    const SCRIPT_VERSION = '2.2.0';
     
     // Default configuration
     const DEFAULT_CONFIG = {
@@ -27,7 +27,11 @@
             description: 'Sports app, Entertainment app<br>Play anytime, anywhere',
             installText: 'Install',
             closeText: '×',
-            iosInstructions: 'Tap the share button and select "Add to Home Screen"'
+            iosInstructions: 'Tap the share button and select "Add to Home Screen"',
+            modalTitle: 'Install MachiBet App',
+            modalIOSInstructions: 'Install on iOS:\n\n1. Tap the Share button (square with arrow ↑) at the bottom of Safari\n2. Scroll down in the share menu\n3. Tap "Add to Home Screen"\n4. Tap "Add" to confirm\n\nNote: iOS requires manual installation. Auto-install is not possible due to Apple security restrictions.',
+            modalButtonText: 'I Understand',
+            modalCloseText: 'Close'
         },
         bn: {
             appName: 'MachiBet',
@@ -35,7 +39,11 @@
             description: 'স্পোর্টস অ্যাপ, এন্টারটেইনমেন্ট অ্যাপ<br>খেলুন এনি টাইম এনি প্লেস',
             installText: 'ইনস্টল',
             closeText: '×',
-            iosInstructions: 'শেয়ার বোতামে ট্যাপ করুন এবং "হোম স্ক্রিনে যোগ করুন" নির্বাচন করুন'
+            iosInstructions: 'শেয়ার বোতামে ট্যাপ করুন এবং "হোম স্ক্রিনে যোগ করুন" নির্বাচন করুন',
+            modalTitle: 'MachiBet অ্যাপ ইনস্টল করুন',
+            modalIOSInstructions: 'iOS এ ইনস্টল করুন:\n\n১. Safari এর নিচে শেয়ার বোতামে (তীর সহ বর্গক্ষেত্র ↑) ট্যাপ করুন\n২. শেয়ার মেনুতে নিচে স্ক্রল করুন\n৩. "হোম স্ক্রিনে যোগ করুন" ট্যাপ করুন\n৪. নিশ্চিত করতে "যোগ করুন" ট্যাপ করুন\n\nদ্রষ্টব্য: iOS-এ ম্যানুয়াল ইনস্টলেশন প্রয়োজন। Apple-এর নিরাপত্তা সীমাবদ্ধতার কারণে স্বয়ংক্রিয় ইনস্টল সম্ভব নয়।',
+            modalButtonText: 'আমি বুঝেছি',
+            modalCloseText: 'বন্ধ করুন'
         }
     };
 
@@ -199,98 +207,45 @@
      * This ensures the PWA has proper icon and name when installed
      */
     function injectManifest() {
-        // Check if manifest already exists
+        // 1. Handle Viewport and Status Bar (Ensures the white area you circled stays white)
+        let viewportMeta = document.querySelector('meta[name="viewport"]');
+        if (viewportMeta) {
+            let content = viewportMeta.getAttribute('content');
+            // Change 'cover' to 'auto' so the blue banner doesn't slide under the notch
+            if (content.includes('viewport-fit=cover')) {
+                viewportMeta.setAttribute('content', content.replace('viewport-fit=cover', 'viewport-fit=auto'));
+            }
+        }
+
+        // Force iOS status bar to 'default' (White background with black text)
+        let appleStatusMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+        if (!appleStatusMeta) {
+            appleStatusMeta = document.createElement('meta');
+            appleStatusMeta.name = 'apple-mobile-web-app-status-bar-style';
+            document.head.appendChild(appleStatusMeta);
+        }
+        appleStatusMeta.content = 'default';
+
+        // 2. Original Manifest Logic
         let manifestLink = document.querySelector('link[rel="manifest"]');
-        
         if (!manifestLink) {
-            // Create manifest link
             manifestLink = document.createElement('link');
             manifestLink.rel = 'manifest';
             document.head.appendChild(manifestLink);
-            console.log('PWA Install Banner: Created manifest link element');
-        } else {
-            console.log('PWA Install Banner: Manifest link already exists:', manifestLink.href);
         }
         
-        // Always use hosted manifest URL (more reliable than blob URLs)
         if (CONFIG.manifestUrl) {
-            manifestLink.href = CONFIG.manifestUrl + '?v=' + Date.now(); // Cache bust
-            console.log('PWA Install Banner: Set manifest URL to:', manifestLink.href);
-        } else {
-            // Fallback: Create dynamic manifest
-            const manifestData = {
-                name: getLocalizedText('appName'),
-                short_name: getLocalizedText('appName'),
-                description: getLocalizedText('description').replace(/<br>/g, ' '),
-                start_url: window.location.origin + '/',
-                display: 'standalone',
-                background_color: '#ffffff',
-                theme_color: '#016ecf',
-                orientation: 'portrait-primary',
-                icons: [
-                    {
-                        src: CONFIG.logoUrl,
-                        sizes: '192x192',
-                        type: 'image/png',
-                        purpose: 'any'
-                    },
-                    {
-                        src: CONFIG.logoUrl,
-                        sizes: '512x512',
-                        type: 'image/png',
-                        purpose: 'any'
-                    }
-                ],
-                categories: ['entertainment', 'sports', 'games']
-            };
-            
-            const blob = new Blob([JSON.stringify(manifestData, null, 2)], { type: 'application/json' });
-            const blobUrl = URL.createObjectURL(blob);
-            manifestLink.href = blobUrl;
-            console.log('PWA Install Banner: Created dynamic manifest with blob URL');
+            manifestLink.href = CONFIG.manifestUrl + '?v=' + Date.now();
         }
-        
-        // Also add theme color meta tag (blue to match banner)
+
+        // 3. Set Theme Color to White (This is the most critical part for the status bar)
         let themeColorMeta = document.querySelector('meta[name="theme-color"]');
         if (!themeColorMeta) {
             themeColorMeta = document.createElement('meta');
             themeColorMeta.name = 'theme-color';
             document.head.appendChild(themeColorMeta);
         }
-        themeColorMeta.content = '#016ecf'; // Blue to match banner background
-        console.log('PWA Install Banner: Set theme-color to blue');
-        
-        // Verify icon is accessible
-        const iconImg = new Image();
-        iconImg.onload = function() {
-            console.log('PWA Install Banner: Icon loaded successfully:', CONFIG.logoUrl);
-            console.log('PWA Install Banner: Icon dimensions:', iconImg.width + 'x' + iconImg.height);
-        };
-        iconImg.onerror = function() {
-            console.error('PWA Install Banner: Icon FAILED to load:', CONFIG.logoUrl);
-            console.error('PWA Install Banner: Check if URL is accessible and CORS is enabled');
-            console.error('PWA Install Banner: Browser will show default icon');
-        };
-        iconImg.src = CONFIG.logoUrl;
-        
-        // Force browser to re-read manifest
-        setTimeout(() => {
-            const currentManifest = document.querySelector('link[rel="manifest"]');
-            if (currentManifest && currentManifest.href) {
-                console.log('PWA Install Banner: Manifest link confirmed:', currentManifest.href);
-                
-                // Try to fetch manifest to verify it's accessible
-                fetch(currentManifest.href)
-                    .then(res => res.json())
-                    .then(data => {
-                        console.log('PWA Install Banner: Manifest loaded successfully:', data);
-                        console.log('PWA Install Banner: Icons in manifest:', data.icons);
-                    })
-                    .catch(err => {
-                        console.error('PWA Install Banner: Failed to load manifest:', err);
-                    });
-            }
-        }, 100);
+        themeColorMeta.content = '#ffffff'; // Keeps the system bar white
     }
 
     /**
@@ -320,19 +275,19 @@
         const banner = document.createElement('div');
         banner.id = CONFIG.bannerId;
         banner.style.cssText = `
-            display: flex;
-            align-items: center;
-            height: auto;
-            min-height: 50px;
-            padding: 10px 15px;
-            overflow: hidden;
-            position: sticky;
-            top: 0;
-            z-index: 9999;
-            background: linear-gradient(135deg, #016ecf 0%, #022a6a 100%);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-        `;
+    display: flex;
+    align-items: center;
+    height: auto;
+    min-height: 50px;
+    padding: 10px 15px;
+    /* Use padding-top to ensure the blue doesn't touch the very top edge if needed */
+    margin-top: 0; 
+    position: relative; /* Changed from sticky to relative to prevent status bar blending */
+    z-index: 9999;
+    background: linear-gradient(135deg, #016ecf 0%, #022a6a 100%);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    font-family: -apple-system, BlinkMacSystemFont, ...;
+`;
 
         // Close button
         const closeBtn = document.createElement('button');
@@ -621,33 +576,22 @@
      * iOS requires manual user action: Share button → Add to Home Screen
      */
     function showIOSInstallGuide() {
-        // Check if we're in a webview that might support programmatic install (unlikely but check)
-        const isInWebView = window.navigator.standalone === false && 
-                           (window.navigator.userAgent.includes('wv') || 
-                            window.navigator.userAgent.includes('WebView'));
-        
-        let message = '';
-        if (isInWebView) {
-            // In webview - might have different capabilities, but still unlikely
-            message = `To install this app on iOS:\n\n` +
-                     `1. Tap the Share button (square with arrow) at the bottom\n` +
-                     `2. Scroll down and tap "Add to Home Screen"\n` +
-                     `3. Tap "Add" to confirm\n\n` +
-                     `Note: iOS requires manual installation for security.`;
-        } else {
-            // Standard Safari - must use share button
-            message = `Install on iOS:\n\n` +
-                     `1. Tap the Share button (square with arrow ↑) at the bottom of Safari\n` +
-                     `2. Scroll down in the share menu\n` +
-                     `3. Tap "Add to Home Screen"\n` +
-                     `4. Tap "Add" to confirm\n\n` +
-                     `Note: iOS requires manual installation. Auto-install is not possible due to Apple security restrictions.`;
-        }
+        // Use localized text for the modal
+        const lang = getLang();
+        const modalTitle = getLocalizedText('modalTitle') || 'Install MachiBet App';
+        const modalMessage = getLocalizedText('modalIOSInstructions') || 
+            `Install on iOS:\n\n` +
+            `1. Tap the Share button (square with arrow ↑) at the bottom of Safari\n` +
+            `2. Scroll down in the share menu\n` +
+            `3. Tap "Add to Home Screen"\n` +
+            `4. Tap "Add" to confirm\n\n` +
+            `Note: iOS requires manual installation. Auto-install is not possible due to Apple security restrictions.`;
+        const modalButtonText = getLocalizedText('modalButtonText') || 'I Understand';
         
         createInstallModal({
-            title: 'Install MachiBet App',
-            message: message,
-            buttonText: 'I Understand',
+            title: modalTitle,
+            message: modalMessage,
+            buttonText: modalButtonText,
             onConfirm: () => {
                 // Close modal
             }
@@ -661,10 +605,13 @@
         // Remove HTML tags for cleaner display
         const textOnly = instructions.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
         
+        const modalTitle = getLang() === 'bn' ? 'iOS ইনস্টলেশন নির্দেশনা' : 'iOS Installation Instructions';
+        const modalButtonText = getLocalizedText('modalButtonText') || 'Got it';
+        
         createInstallModal({
-            title: 'iOS Installation Instructions',
+            title: modalTitle,
             message: textOnly,
-            buttonText: 'Got it',
+            buttonText: modalButtonText,
             onConfirm: () => {
                 // Just close the modal
             }
@@ -757,7 +704,7 @@
 
         // Close button
         const closeBtn = document.createElement('button');
-        closeBtn.textContent = 'Close';
+        closeBtn.textContent = getLocalizedText('modalCloseText') || 'Close';
         closeBtn.style.cssText = `
             padding: 10px 20px;
             border: 1px solid #ddd;
