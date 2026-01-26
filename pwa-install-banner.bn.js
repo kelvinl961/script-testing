@@ -3,7 +3,7 @@
     'use strict';
 
     // Script version - increment this when making changes to force cache refresh
-    const SCRIPT_VERSION = "2.1.5-bn";
+    const SCRIPT_VERSION = '2.1.5';
     
     // Default configuration
     const DEFAULT_CONFIG = {
@@ -41,7 +41,10 @@
 
     // Current language - set based on script filename
     // This will be overridden in the separate .en.js and .bn.js files
-    let currentLang = "bn";
+    // For main script: null (auto-detect)
+    // For .en.js: "en" (hardcoded)
+    // For .bn.js: "bn" (hardcoded)
+    let currentLang = null;
     let CONFIG = Object.assign({}, DEFAULT_CONFIG);
     let isInitialized = false;
     
@@ -247,14 +250,15 @@
             console.log('PWA Install Banner: Created dynamic manifest with blob URL');
         }
         
-        // Also add theme color meta tag
-        if (!document.querySelector('meta[name="theme-color"]')) {
-            const themeColor = document.createElement('meta');
-            themeColor.name = 'theme-color';
-            themeColor.content = '#016ecf';
-            document.head.appendChild(themeColor);
-            console.log('PWA Install Banner: Added theme-color meta tag');
+        // Also add theme color meta tag (white to match banner)
+        let themeColorMeta = document.querySelector('meta[name="theme-color"]');
+        if (!themeColorMeta) {
+            themeColorMeta = document.createElement('meta');
+            themeColorMeta.name = 'theme-color';
+            document.head.appendChild(themeColorMeta);
         }
+        themeColorMeta.content = '#ffffff'; // White to match banner background
+        console.log('PWA Install Banner: Set theme-color to white');
         
         // Verify icon is accessible
         const iconImg = new Image();

@@ -250,14 +250,15 @@
             console.log('PWA Install Banner: Created dynamic manifest with blob URL');
         }
         
-        // Also add theme color meta tag
-        if (!document.querySelector('meta[name="theme-color"]')) {
-            const themeColor = document.createElement('meta');
-            themeColor.name = 'theme-color';
-            themeColor.content = '#016ecf';
-            document.head.appendChild(themeColor);
-            console.log('PWA Install Banner: Added theme-color meta tag');
+        // Also add theme color meta tag (white to match banner)
+        let themeColorMeta = document.querySelector('meta[name="theme-color"]');
+        if (!themeColorMeta) {
+            themeColorMeta = document.createElement('meta');
+            themeColorMeta.name = 'theme-color';
+            document.head.appendChild(themeColorMeta);
         }
+        themeColorMeta.content = '#ffffff'; // White to match banner background
+        console.log('PWA Install Banner: Set theme-color to white');
         
         // Verify icon is accessible
         const iconImg = new Image();
