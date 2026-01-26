@@ -3,7 +3,7 @@
     'use strict';
 
     // Script version - increment this when making changes to force cache refresh
-    const SCRIPT_VERSION = '2.1.5';
+    const SCRIPT_VERSION = "2.1.5-en";
     
     // Default configuration
     const DEFAULT_CONFIG = {
@@ -41,7 +41,7 @@
 
     // Current language - set based on script filename
     // This will be overridden in the separate .en.js and .bn.js files
-    let currentLang = null;
+    let currentLang = "en";
     let CONFIG = Object.assign({}, DEFAULT_CONFIG);
     let isInitialized = false;
     
