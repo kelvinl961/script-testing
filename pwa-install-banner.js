@@ -179,13 +179,33 @@
             console.log('PWA Install Banner: Added theme-color meta tag');
         }
         
-        // Force browser to re-read manifest by removing and re-adding (if needed)
+        // Verify icon is accessible
+        const iconImg = new Image();
+        iconImg.onload = function() {
+            console.log('PWA Install Banner: Icon is accessible:', CONFIG.logoUrl);
+        };
+        iconImg.onerror = function() {
+            console.warn('PWA Install Banner: Icon failed to load:', CONFIG.logoUrl);
+            console.warn('PWA Install Banner: Browser may show default icon. ICO files may not work for PWA - consider using PNG.');
+        };
+        iconImg.src = CONFIG.logoUrl;
+        
+        // Force browser to re-read manifest
         setTimeout(() => {
             const currentManifest = document.querySelector('link[rel="manifest"]');
             if (currentManifest && currentManifest.href) {
                 console.log('PWA Install Banner: Manifest link confirmed:', currentManifest.href);
-                // Trigger a re-check by dispatching a custom event
-                window.dispatchEvent(new Event('appinstalled'));
+                
+                // Try to fetch manifest to verify it's accessible
+                fetch(currentManifest.href)
+                    .then(res => res.json())
+                    .then(data => {
+                        console.log('PWA Install Banner: Manifest loaded successfully:', data);
+                        console.log('PWA Install Banner: Icons in manifest:', data.icons);
+                    })
+                    .catch(err => {
+                        console.error('PWA Install Banner: Failed to load manifest:', err);
+                    });
             }
         }, 100);
     }
