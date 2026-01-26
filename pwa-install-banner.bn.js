@@ -2,10 +2,10 @@
 (function() {
     'use strict';
 
-    // Script version - increment this when making changes to force cache refresh
-    const SCRIPT_VERSION = '2.2.0-bn';
     
-    // Default configuration
+    const SCRIPT_VERSION = '2.2.1-bn';
+    
+    
     const DEFAULT_CONFIG = {
         bannerId: 'pwa-install-banner',
         logoUrl: 'https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/favicon-1.png',
@@ -19,7 +19,7 @@
         injectManifest: true,
     };
 
-    // i18n translations
+    
     const i18n = {
         en: {
             appName: 'MachiBet',
@@ -47,65 +47,57 @@
         }
     };
 
-    // Current language - set based on script filename
-    // This will be overridden in the separate .en.js and .bn.js files
-    // For main script: null (auto-detect)
-    // For .en.js: "en" (hardcoded)
-    // For .bn.js: "bn" (hardcoded)
-    let currentLang = "bn";
+    
+    
+    
+    
+    
+    let currentLang = 'bn';
     let CONFIG = Object.assign({}, DEFAULT_CONFIG);
     let isInitialized = false;
     
-    // Log script version for debugging
+    
     console.log('PWA Install Banner Script v' + SCRIPT_VERSION + ' loaded');
     
-    /**
-     * Get current language
-     * For separate scripts: returns hardcoded language
-     * For main script: auto-detects
-     */
-    function getLang() {
-        // If language was hardcoded (in .en.js or .bn.js), use it
+        function getLang() {
+        
         if (currentLang !== null) {
             return currentLang;
         }
         
-        // If language was set via init(), use it
+        
         if (currentLang) {
             return currentLang;
         }
         
-        // Check document lang attribute
+        
         const docLang = document.documentElement.lang;
         if (docLang && (docLang === 'bn' || docLang.startsWith('bn-'))) {
             return 'bn';
         }
         
-        // Check URL parameter
+        
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('lang') === 'bn') {
             return 'bn';
         }
         
-        // Check localStorage marketing campaign
+        
         const marketingCampaign = localStorage.getItem('marketing_campaign');
         if (marketingCampaign && marketingCampaign.includes('BD_BN')) {
             return 'bn';
         }
         
-        // Default to English
+        
         return 'en';
     }
     
-    /**
-     * Get localized text
-     */
-    function getLocalizedText(key) {
+        function getLocalizedText(key) {
         const lang = getLang();
         const translations = i18n[lang] || i18n.en;
         const text = translations[key];
         
-        // If key doesn't exist in current language, try English fallback
+        
         if (text === undefined || text === null) {
             const fallback = i18n.en[key];
             if (fallback !== undefined && fallback !== null) {
@@ -113,57 +105,45 @@
             }
         }
         
-        // Return text or empty string (never undefined)
+        
         return text || '';
     }
 
-    /**
-     * Check if app is running in standalone mode (installed PWA)
-     */
-    function isStandalone() {
-        // Standard way to detect standalone mode
+        function isStandalone() {
+        
         if (window.matchMedia('(display-mode: standalone)').matches) {
             return true;
         }
         
-        // iOS Safari detection
+        
         if (window.navigator.standalone === true) {
             return true;
         }
         
-        // Check for minimal-ui (some browsers)
+        
         if (window.matchMedia('(display-mode: minimal-ui)').matches) {
             return true;
         }
         
-        // Additional check: if window size matches typical standalone behavior
-        // This is a fallback for older browsers
+        
+        
         if (window.matchMedia('(display-mode: fullscreen)').matches) {
-            // Could be standalone, but less reliable
-            return false; // Conservative approach
+            
+            return false; 
         }
         
         return false;
     }
 
-    /**
-     * Check if user is on iOS
-     */
-    function isIOS() {
+        function isIOS() {
         return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     }
 
-    /**
-     * Check if user is on Android
-     */
-    function isAndroid() {
+        function isAndroid() {
         return /Android/.test(navigator.userAgent);
     }
 
-    /**
-     * Check if banner was previously dismissed
-     */
-    function isBannerDismissed() {
+        function isBannerDismissed() {
         try {
             return localStorage.getItem(CONFIG.localStorageKey) === 'true';
         } catch (e) {
@@ -171,21 +151,15 @@
         }
     }
 
-    /**
-     * Mark banner as dismissed
-     */
-    function dismissBanner() {
+        function dismissBanner() {
         try {
             localStorage.setItem(CONFIG.localStorageKey, 'true');
         } catch (e) {
-            // Ignore localStorage errors
+            
         }
     }
 
-    /**
-     * Check if domain is allowed (if domain checking is enabled)
-     */
-    function isDomainAllowed() {
+        function isDomainAllowed() {
         if (!CONFIG.checkDomain) {
             return true;
         }
@@ -194,30 +168,23 @@
         return CONFIG.allowedDomains.some(domain => currentUrl.includes(domain));
     }
 
-    /**
-     * Check if the third-party site has manifest.json linked
-     */
-    function hasManifest() {
+        function hasManifest() {
         const manifestLink = document.querySelector('link[rel="manifest"]');
         return manifestLink !== null;
     }
 
-    /**
-     * Inject or update manifest for third-party site
-     * This ensures the PWA has proper icon and name when installed
-     */
-    function injectManifest() {
-        // 1. Handle Viewport and Status Bar (Ensures the white area you circled stays white)
+        function injectManifest() {
+        
         let viewportMeta = document.querySelector('meta[name="viewport"]');
         if (viewportMeta) {
             let content = viewportMeta.getAttribute('content');
-            // Change 'cover' to 'auto' so the blue banner doesn't slide under the notch
+            
             if (content.includes('viewport-fit=cover')) {
                 viewportMeta.setAttribute('content', content.replace('viewport-fit=cover', 'viewport-fit=auto'));
             }
         }
 
-        // Force iOS status bar to 'default' (White background with black text)
+        
         let appleStatusMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
         if (!appleStatusMeta) {
             appleStatusMeta = document.createElement('meta');
@@ -226,7 +193,7 @@
         }
         appleStatusMeta.content = 'default';
 
-        // 2. Original Manifest Logic
+        
         let manifestLink = document.querySelector('link[rel="manifest"]');
         if (!manifestLink) {
             manifestLink = document.createElement('link');
@@ -238,36 +205,27 @@
             manifestLink.href = CONFIG.manifestUrl + '?v=' + Date.now();
         }
 
-        // 3. Set Theme Color to White (This is the most critical part for the status bar)
+        
         let themeColorMeta = document.querySelector('meta[name="theme-color"]');
         if (!themeColorMeta) {
             themeColorMeta = document.createElement('meta');
             themeColorMeta.name = 'theme-color';
             document.head.appendChild(themeColorMeta);
         }
-        themeColorMeta.content = '#ffffff'; // Keeps the system bar white
+        themeColorMeta.content = '#ffffff'; 
     }
 
-    /**
-     * Check if the third-party site has service worker registered
-     */
-    function hasServiceWorker() {
+        function hasServiceWorker() {
         return 'serviceWorker' in navigator && navigator.serviceWorker.controller !== null;
     }
 
-    /**
-     * Check if the third-party site has PWA capabilities
-     */
-    function hasPWACapabilities() {
+        function hasPWACapabilities() {
         return hasManifest() || hasServiceWorker();
     }
 
 
-    /**
-     * Create and inject the banner HTML
-     */
-    function createBanner() {
-        // Don't create if already exists
+        function createBanner() {
+        
         if (document.getElementById(CONFIG.bannerId)) {
             return;
         }
@@ -280,16 +238,14 @@
     height: auto;
     min-height: 50px;
     padding: 10px 15px;
-    /* Use padding-top to ensure the blue doesn't touch the very top edge if needed */
-    margin-top: 0; 
-    position: relative; /* Changed from sticky to relative to prevent status bar blending */
-    z-index: 9999;
+        margin-top: 0; 
+    position: relative;     z-index: 9999;
     background: linear-gradient(135deg, #016ecf 0%, #022a6a 100%);
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     font-family: -apple-system, BlinkMacSystemFont, ...;
 `;
 
-        // Close button
+        
         const closeBtn = document.createElement('button');
         closeBtn.innerHTML = getLocalizedText('closeText') || '×';
         closeBtn.style.cssText = `
@@ -320,7 +276,7 @@
             closeBtn.style.opacity = '1';
         });
 
-        // Content container
+        
         const content = document.createElement('div');
         content.style.cssText = `
             display: flex;
@@ -329,7 +285,7 @@
             gap: 12px;
         `;
 
-        // Logo
+        
         const logo = document.createElement('img');
         logo.src = CONFIG.logoUrl;
         logo.alt = getLocalizedText('appName') || 'MachiBet';
@@ -343,7 +299,7 @@
             background: white;
         `;
 
-        // Text content
+        
         const textContainer = document.createElement('div');
         textContainer.style.cssText = `
             display: flex;
@@ -382,7 +338,7 @@
         content.appendChild(logo);
         content.appendChild(textContainer);
 
-        // Install button
+        
         const installBtn = document.createElement('button');
         installBtn.id = 'pwa-install-button';
         const installText = getLocalizedText('installText') || 'Install';
@@ -414,45 +370,36 @@
         banner.appendChild(content);
         banner.appendChild(installBtn);
 
-        // Insert at the top of body
+        
         if (document.body) {
             document.body.insertBefore(banner, document.body.firstChild);
         } else {
-            // If body doesn't exist yet, wait for DOM
+            
             document.addEventListener('DOMContentLoaded', () => {
                 document.body.insertBefore(banner, document.body.firstChild);
             });
         }
     }
 
-    /**
-     * Hide the banner
-     */
-    function hideBanner() {
+        function hideBanner() {
         const banner = document.getElementById(CONFIG.bannerId);
         if (banner) {
             banner.style.display = 'none';
         }
     }
 
-    /**
-     * Show the banner
-     */
-    function showBanner() {
+        function showBanner() {
         const banner = document.getElementById(CONFIG.bannerId);
         if (banner) {
             banner.style.display = 'flex';
         }
     }
 
-    /**
-     * Handle install button click
-     */
-    let deferredPrompt = null;
+        let deferredPrompt = null;
 
     function handleInstallClick() {
         if (deferredPrompt) {
-            // Chrome/Edge Android/Desktop - Real install prompt
+            
             deferredPrompt.prompt();
             deferredPrompt.userChoice.then((choiceResult) => {
                 if (choiceResult.outcome === 'accepted') {
@@ -463,41 +410,38 @@
                 deferredPrompt = null;
             });
         } else if (isIOS()) {
-            // iOS Safari - Note: Auto-install is NOT possible on iOS due to Apple security restrictions
-            // iOS requires manual user action: Share button → Add to Home Screen
-            // We can only guide the user through the process
+            
+            
+            
             if (CONFIG.showIOSInstructions) {
-                // Try to detect if we can do anything programmatically (we can't, but check anyway)
-                // On iOS, we can only show instructions - no programmatic install possible
+                
+                
                 showIOSInstallGuide();
             }
         } else {
-            // No prompt available - check if third-party site has PWA setup
+            
             if (hasPWACapabilities()) {
-                // Site has PWA setup but prompt not available yet (might appear later)
-                // Show banner anyway - the beforeinstallprompt event might fire later
+                
+                
                 console.log('PWA Install Banner: Site has PWA capabilities but prompt not available yet');
-                showManualInstallInstructions(true); // Pass true to indicate site has PWA
+                showManualInstallInstructions(true); 
             } else if (isTestMode()) {
                 showTestInstallPrompt();
             } else {
-                // Site doesn't have PWA setup - show instructions
+                
                 showManualInstallInstructions(false);
             }
         }
     }
 
-    /**
-     * Show test/demo install prompt (for testing purposes)
-     */
-    function showTestInstallPrompt() {
-        // Try to trigger install if somehow we have the prompt
+        function showTestInstallPrompt() {
+        
         if (deferredPrompt) {
             handleInstallClick();
             return;
         }
         
-        // Create a visual modal instead of alert for better UX
+        
         createInstallModal({
             title: 'Test Mode - Install Simulation',
             message: `In production (HTTPS with PWA manifest), clicking "Install Now" would automatically trigger the native browser install prompt.\n\n` +
@@ -516,16 +460,12 @@
         });
     }
 
-    /**
-     * Show manual install instructions with visual guide
-     * @param {boolean} hasPWA - Whether the third-party site has PWA setup
-     */
-    function showManualInstallInstructions(hasPWA = false) {
+        function showManualInstallInstructions(hasPWA = false) {
         let title = '';
         let message = '';
         
         if (hasPWA) {
-            // Site has PWA setup - install should be possible
+            
             if (isAndroid()) {
                 title = 'Android Installation';
                 message = `This site supports PWA installation!\n\n` +
@@ -543,7 +483,7 @@
                     `The install option should appear automatically.`;
             }
         } else {
-            // Site doesn't have PWA setup
+            
             if (isAndroid()) {
                 title = 'Installation Instructions';
                 message = `To add this site to your home screen:\n\n` +
@@ -566,17 +506,13 @@
             message: message,
             buttonText: 'Got it',
             onConfirm: () => {
-                // Just close the modal
+                
             }
         });
     }
 
-    /**
-     * Show iOS install guide (Note: Auto-install is NOT possible on iOS due to Apple restrictions)
-     * iOS requires manual user action: Share button → Add to Home Screen
-     */
-    function showIOSInstallGuide() {
-        // Use localized text for the modal
+        function showIOSInstallGuide() {
+        
         const lang = getLang();
         const modalTitle = getLocalizedText('modalTitle') || 'Install MachiBet App';
         const modalMessage = getLocalizedText('modalIOSInstructions') || 
@@ -593,16 +529,13 @@
             message: modalMessage,
             buttonText: modalButtonText,
             onConfirm: () => {
-                // Close modal
+                
             }
         });
     }
 
-    /**
-     * Show iOS install instructions in a styled modal (legacy function)
-     */
-    function showInstallInstructions(instructions) {
-        // Remove HTML tags for cleaner display
+        function showInstallInstructions(instructions) {
+        
         const textOnly = instructions.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
         
         const modalTitle = getLang() === 'bn' ? 'iOS ইনস্টলেশন নির্দেশনা' : 'iOS Installation Instructions';
@@ -613,22 +546,19 @@
             message: textOnly,
             buttonText: modalButtonText,
             onConfirm: () => {
-                // Just close the modal
+                
             }
         });
     }
 
-    /**
-     * Create a styled modal for install instructions/prompts
-     */
-    function createInstallModal({ title, message, buttonText, onConfirm }) {
-        // Remove existing modal if any
+        function createInstallModal({ title, message, buttonText, onConfirm }) {
+        
         const existingModal = document.getElementById('pwa-install-modal');
         if (existingModal) {
             existingModal.remove();
         }
 
-        // Create overlay
+        
         const overlay = document.createElement('div');
         overlay.id = 'pwa-install-modal';
         overlay.style.cssText = `
@@ -645,7 +575,7 @@
             padding: 20px;
         `;
 
-        // Create modal
+        
         const modal = document.createElement('div');
         modal.style.cssText = `
             background: white;
@@ -657,7 +587,7 @@
             animation: slideIn 0.3s ease-out;
         `;
 
-        // Add animation
+        
         const style = document.createElement('style');
         style.textContent = `
             @keyframes slideIn {
@@ -673,7 +603,7 @@
         `;
         document.head.appendChild(style);
 
-        // Title
+        
         const titleEl = document.createElement('h2');
         titleEl.textContent = title;
         titleEl.style.cssText = `
@@ -683,7 +613,7 @@
             color: #333;
         `;
 
-        // Message
+        
         const messageEl = document.createElement('p');
         messageEl.textContent = message;
         messageEl.style.cssText = `
@@ -694,7 +624,7 @@
             white-space: pre-line;
         `;
 
-        // Button container
+        
         const buttonContainer = document.createElement('div');
         buttonContainer.style.cssText = `
             display: flex;
@@ -702,7 +632,7 @@
             justify-content: flex-end;
         `;
 
-        // Close button
+        
         const closeBtn = document.createElement('button');
         closeBtn.textContent = getLocalizedText('modalCloseText') || 'Close';
         closeBtn.style.cssText = `
@@ -720,7 +650,7 @@
             style.remove();
         });
 
-        // Confirm button
+        
         const confirmBtn = document.createElement('button');
         confirmBtn.textContent = buttonText;
         confirmBtn.style.cssText = `
@@ -747,7 +677,7 @@
         modal.appendChild(buttonContainer);
         overlay.appendChild(modal);
 
-        // Close on overlay click
+        
         overlay.addEventListener('click', (e) => {
             if (e.target === overlay) {
                 overlay.remove();
@@ -758,10 +688,7 @@
         document.body.appendChild(overlay);
     }
 
-    /**
-     * Show success message
-     */
-    function showSuccessMessage(message) {
+        function showSuccessMessage(message) {
         const toast = document.createElement('div');
         toast.textContent = message;
         toast.style.cssText = `
@@ -805,17 +732,14 @@
         }, 3000);
     }
 
-    /**
-     * Check if test mode is enabled (via URL parameter or data attribute)
-     */
-    function isTestMode() {
-        // Check URL parameter
+        function isTestMode() {
+        
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('pwa-test') === 'true') {
             return true;
         }
         
-        // Check data attribute on script tag
+        
         const scripts = document.getElementsByTagName('script');
         for (let script of scripts) {
             if (script.src && script.src.includes('pwa-install-banner.js')) {
@@ -828,30 +752,24 @@
         return false;
     }
 
-    /**
-     * Initialize the PWA install banner
-     * @param {Object} opts - Configuration options
-     * @param {string} opts.lang - Language code ('en' or 'bn')
-     * @param {Object} opts.config - Additional config overrides
-     */
-    function init(opts = {}) {
-        // Merge user config with defaults
+        function init(opts = {}) {
+        
         if (opts.config) {
             CONFIG = Object.assign({}, DEFAULT_CONFIG, opts.config);
         }
         
-        // Set language if provided (MUST be set before banner creation)
+        
         if (opts.lang && (opts.lang === 'en' || opts.lang === 'bn')) {
             currentLang = opts.lang;
             console.log('PWA Install Banner: Language explicitly set to', currentLang);
         }
         
-        // Log initialization with version
+        
         console.log('PWA Install Banner: Initializing v' + SCRIPT_VERSION);
         console.log('PWA Install Banner: Current language:', getLang());
         console.log('PWA Install Banner: Current URL:', window.location.href);
         
-        // If banner already exists and language changed, recreate it
+        
         const existingBanner = document.getElementById(CONFIG.bannerId);
         if (existingBanner && opts.lang) {
             console.log('PWA Install Banner: Recreating banner with new language');
@@ -860,66 +778,66 @@
         
         isInitialized = true;
         
-        // Inject manifest for third-party sites if enabled (do this FIRST, before anything else)
+        
         if (CONFIG.injectManifest) {
-            // Always inject/update manifest to ensure it's using our hosted version
+            
             injectManifest();
         }
 
-        // Don't show if already in standalone mode (unless test mode)
+        
         if (isStandalone() && !isTestMode()) {
             console.log('PWA Install Banner: Running in standalone mode, banner not shown');
             return;
         }
 
-        // Check if banner was dismissed (unless test mode or force show)
+        
         if (isBannerDismissed() && !isTestMode() && !opts.forceShow) {
             console.log('PWA Install Banner: Banner was previously dismissed');
             console.log('PWA Install Banner: To show again, clear localStorage or use init({ forceShow: true })');
-            // Don't return - still show banner on PC if explicitly requested
+            
             if (!opts.forceShow) {
-                // Only skip if not forcing show
+                
                 return;
             }
         }
 
-        // Check domain if enabled
+        
         if (!isDomainAllowed()) {
             console.log('PWA Install Banner: Domain not allowed');
             return;
         }
 
-        // Listen for beforeinstallprompt event (Chrome/Edge)
-        // This event fires when the THIRD-PARTY site has PWA setup and is installable
+        
+        
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             
             console.log('PWA Install Banner: beforeinstallprompt event received - third-party site has PWA capabilities!');
             
-            // Create and show banner
+            
             createBanner();
             
-            // Auto-trigger install prompt after a short delay (optional - can be disabled)
-            // This makes it more "automated" - user sees banner and prompt appears
+            
+            
             if (CONFIG.autoTriggerInstall) {
                 setTimeout(() => {
                     if (deferredPrompt && document.getElementById(CONFIG.bannerId)) {
-                        // Auto-trigger the install prompt
+                        
                         handleInstallClick();
                     }
                 }, CONFIG.autoTriggerDelay || 2000);
             }
         });
 
-        // Show banner on all platforms (iOS, Android, Desktop)
-        // iOS: Show immediately (no beforeinstallprompt event)
-        // Desktop/Android: Show after short delay if beforeinstallprompt doesn't fire
+        
+        
+        
         const showBannerDelay = isIOS() ? 500 : 1000;
         
         setTimeout(() => {
             if (!document.getElementById(CONFIG.bannerId)) {
-                // Show if not in standalone mode (and not dismissed unless forceShow)
+                
                 const shouldShow = !isStandalone() && (!isBannerDismissed() || opts.forceShow);
                 if (shouldShow) {
                     console.log('PWA Install Banner: Showing banner (language:', getLang() + ')');
@@ -930,7 +848,7 @@
             }
         }, showBannerDelay);
 
-        // Also listen for appinstalled event
+        
         window.addEventListener('appinstalled', () => {
             console.log('PWA was installed');
             hideBanner();
@@ -938,17 +856,17 @@
         });
     }
 
-    // Create and expose PWAInstallBanner API
+    
     const PWAInstallBanner = {
         init: function(opts) {
             console.log('PWA Install Banner: init() called with options:', opts);
-            // If already initialized, recreate banner with new settings
+            
             if (isInitialized && opts) {
                 if (opts.lang) {
                     currentLang = opts.lang;
                     console.log('PWA Install Banner: Language updated to', currentLang);
                 }
-                // Remove existing banner to recreate with new language
+                
                 const existingBanner = document.getElementById(CONFIG.bannerId);
                 if (existingBanner) {
                     existingBanner.remove();
@@ -977,7 +895,7 @@
             if (lang === 'en' || lang === 'bn') {
                 currentLang = lang;
                 console.log('PWA Install Banner: Language changed to', lang);
-                // Recreate banner with new language if it exists
+                
                 const banner = document.getElementById(CONFIG.bannerId);
                 if (banner) {
                     banner.remove();
@@ -988,11 +906,11 @@
         version: SCRIPT_VERSION
     };
 
-    // Explicitly attach to window - MUST exist before auto-init
+    
     window.PWAInstallBanner = PWAInstallBanner;
     
-    // Auto-initialize when script loads (only if not already initialized)
-    // Delay auto-init slightly to allow manual init() to run first
+    
+    
     setTimeout(function() {
         if (!isInitialized) {
             if (document.readyState === 'loading') {
@@ -1003,13 +921,13 @@
                     }
                 });
             } else {
-                // DOM already loaded
+                
                 if (!isInitialized) {
                     console.log('PWA Install Banner: Auto-initializing (no manual init() called)');
                     init();
                 }
             }
         }
-    }, 100); // Small delay to allow manual init() to run first
+    }, 100); 
 
 })();
