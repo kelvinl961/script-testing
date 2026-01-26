@@ -4,7 +4,8 @@
 
     const CONFIG = {
         bannerId: 'pwa-install-banner',
-        logoUrl: 'https://mcb777.com/favicon.ico',
+        logoUrl: 'https://mcb777.com/favicon.ico', // ICO files may not work - browsers prefer PNG
+        // Alternative: Use PNG if available: 'https://mcb777.com/icon-192x192.png'
         appName: 'MachiBet',
         appNameBn: 'MachiBet',
         title: 'Official App',
