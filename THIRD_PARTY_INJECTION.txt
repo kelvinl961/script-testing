@@ -19,12 +19,13 @@
 </script>
 
 <!-- Alternative: Use fixed version number for production (easier to track) -->
-<!-- <script type="text/javascript">
+<!-- Update version number when deploying new changes -->
+<script type="text/javascript">
 (function(){
     var s = document.createElement('script');
     s.type = 'text/javascript';
-    s.src = 'https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/pwa-install-banner.js?v=2.0';
+    s.src = 'https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/pwa-install-banner.js?v=2.1.0';
     s.async = true;
     document.getElementsByTagName('head')[0].appendChild(s);
 })();
-</script> -->
+</script>
