@@ -506,7 +506,7 @@
         if (hasPWA) {
             // Site has PWA setup - install should be possible
             if (isAndroid()) {
-                title = '📱 Android Installation';
+                title = 'Android Installation';
                 message = `This site supports PWA installation!\n\n` +
                     `To install:\n` +
                     `1. Tap the menu (⋮) in your browser\n` +
@@ -514,7 +514,7 @@
                     `3. Confirm the installation\n\n` +
                     `The install icon (➕) should also appear in the address bar.`;
             } else {
-                title = '💻 Desktop Installation';
+                title = 'Desktop Installation';
                 message = `This site supports PWA installation!\n\n` +
                     `Chrome/Edge:\n` +
                     `• Look for the install icon (➕) in the address bar\n` +
@@ -524,14 +524,14 @@
         } else {
             // Site doesn't have PWA setup
             if (isAndroid()) {
-                title = '📱 Installation Instructions';
+                title = 'Installation Instructions';
                 message = `To add this site to your home screen:\n\n` +
                     `1. Tap the menu (⋮) in your browser\n` +
                     `2. Select "Add to Home screen"\n` +
                     `3. Confirm to add the shortcut\n\n` +
                     `Note: This creates a shortcut, not a full PWA installation.`;
             } else {
-                title = '💻 Installation Instructions';
+                title = 'Installation Instructions';
                 message = `To install this site as an app:\n\n` +
                     `Chrome/Edge:\n` +
                     `• Look for the install icon (➕) in the address bar\n` +
@@ -819,8 +819,9 @@
      * Initialize the PWA install banner
      */
     function init() {
-        // Inject manifest for third-party sites if enabled
-        if (CONFIG.injectManifest && !hasManifest()) {
+        // Inject manifest for third-party sites if enabled (do this FIRST, before anything else)
+        if (CONFIG.injectManifest) {
+            // Always inject/update manifest to ensure it's using our hosted version
             injectManifest();
         }
 
