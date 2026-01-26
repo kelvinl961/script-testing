@@ -3,7 +3,7 @@
     'use strict';
 
     
-    const SCRIPT_VERSION = '2.2.1';
+    const SCRIPT_VERSION = '2.2.2';
     
     
     const DEFAULT_CONFIG = {
