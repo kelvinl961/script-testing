@@ -21,6 +21,8 @@
         iosInstructions: 'Tap the share button <img src="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\'%3E%3Cpath fill=\'%23000\' d=\'M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z\'/%3E%3C/svg%3E" style="width:16px;height:16px;vertical-align:middle;"> and select "Add to Home Screen"',
         autoTriggerInstall: false, // Set to true to auto-show install prompt after banner appears
         autoTriggerDelay: 2000, // Delay in milliseconds before auto-triggering (2000 = 2 seconds)
+        manifestUrl: null, // Set to your hosted manifest URL if you want to use a hosted manifest instead of dynamic
+        injectManifest: true, // Set to true to inject manifest for third-party sites
     };
 
     /**
@@ -109,6 +111,74 @@
     }
 
     /**
+     * Inject or update manifest for third-party site
+     * This ensures the PWA has proper icon and name when installed
+     */
+    function injectManifest() {
+        // Check if manifest already exists
+        let manifestLink = document.querySelector('link[rel="manifest"]');
+        
+        if (!manifestLink) {
+            // Create manifest link
+            manifestLink = document.createElement('link');
+            manifestLink.rel = 'manifest';
+            document.head.appendChild(manifestLink);
+        }
+        
+        // Set manifest URL - use your hosted manifest
+        // For third-party sites, they need to host their own manifest
+        // But we can create a dynamic one via data URI or hosted endpoint
+        const manifestUrl = CONFIG.manifestUrl || 'https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/manifest.json';
+        
+        // Create dynamic manifest based on language
+        const manifestData = {
+            name: getLocalizedText('appName'),
+            short_name: getLocalizedText('appName'),
+            description: getLocalizedText('description').replace(/<br>/g, ' '),
+            start_url: window.location.origin + '/',
+            display: 'standalone',
+            background_color: '#ffffff',
+            theme_color: '#016ecf',
+            orientation: 'portrait-primary',
+            icons: [
+                {
+                    src: CONFIG.logoUrl,
+                    sizes: '192x192',
+                    type: 'image/x-icon',
+                    purpose: 'any'
+                },
+                {
+                    src: CONFIG.logoUrl,
+                    sizes: '512x512',
+                    type: 'image/x-icon',
+                    purpose: 'any'
+                }
+            ],
+            categories: ['entertainment', 'sports', 'games']
+        };
+        
+        // Use hosted manifest URL if available, otherwise create dynamic one
+        if (CONFIG.manifestUrl) {
+            manifestLink.href = CONFIG.manifestUrl;
+            console.log('PWA Install Banner: Using hosted manifest:', CONFIG.manifestUrl);
+        } else {
+            // Create blob URL for dynamic manifest
+            const blob = new Blob([JSON.stringify(manifestData, null, 2)], { type: 'application/json' });
+            const blobUrl = URL.createObjectURL(blob);
+            manifestLink.href = blobUrl;
+            console.log('PWA Install Banner: Created dynamic manifest');
+        }
+        
+        // Also add theme color meta tag
+        if (!document.querySelector('meta[name="theme-color"]')) {
+            const themeColor = document.createElement('meta');
+            themeColor.name = 'theme-color';
+            themeColor.content = '#016ecf';
+            document.head.appendChild(themeColor);
+        }
+    }
+
+    /**
      * Check if the third-party site has service worker registered
      */
     function hasServiceWorker() {
@@ -123,13 +193,41 @@
     }
 
     /**
-     * Get localized text based on marketing campaign
+     * Check if Bengali language is enabled
+     * Checks: URL param (?lang=bn), localStorage marketing_campaign, or script data attribute
+     */
+    function isBengali() {
+        // Check URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('lang') === 'bn') {
+            return true;
+        }
+        
+        // Check localStorage marketing campaign
+        if (localStorage.getItem('marketing_campaign')?.includes('BD_BN')) {
+            return true;
+        }
+        
+        // Check script data attribute
+        const scripts = document.getElementsByTagName('script');
+        for (let script of scripts) {
+            if (script.src && script.src.includes('pwa-install-banner.js')) {
+                if (script.getAttribute('data-lang') === 'bn' || script.getAttribute('data-bengali') === 'true') {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * Get localized text based on language detection
      */
     function getLocalizedText(key) {
-        const isBengali = localStorage.getItem('marketing_campaign')?.includes('BD_BN');
         const bnKey = key + 'Bn';
         
-        if (isBengali && CONFIG[bnKey]) {
+        if (isBengali() && CONFIG[bnKey]) {
             return CONFIG[bnKey];
         }
         
@@ -709,6 +807,11 @@
      * Initialize the PWA install banner
      */
     function init() {
+        // Inject manifest for third-party sites if enabled
+        if (CONFIG.injectManifest && !hasManifest()) {
+            injectManifest();
+        }
+
         // Don't show if already in standalone mode (unless test mode)
         if (isStandalone() && !isTestMode()) {
             console.log('PWA Install Banner: Running in standalone mode, banner not shown');
