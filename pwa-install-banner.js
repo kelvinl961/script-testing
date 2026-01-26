@@ -1,27 +1,7 @@
-/**
- * PWA Install Banner Script
- * 
- * This script detects if the app is running in browser vs installed PWA
- * and displays an install banner only when running in browser mode.
- * 
- * Usage: Inject this script into third-party website (e.g., mcb777.com)
- * The script works standalone - no need to modify the third-party site.
- * 
- * <script src="https://your-domain.com/script/pwa-install-banner.js"></script>
- * 
- * Note: For install prompt to work, the THIRD-PARTY site must have:
- * - manifest.json linked in their HTML
- * - Service worker registered
- * - PWA installability criteria met
- * 
- * If the third-party site doesn't have PWA setup, the banner will still
- * show but will display installation instructions instead.
- */
 
 (function() {
     'use strict';
 
-    // Configuration - Customize these values
     const CONFIG = {
         bannerId: 'pwa-install-banner',
         logoUrl: 'https://mcb777.com/favicon.ico',
@@ -35,13 +15,10 @@
         installTextBn: 'ইনস্টল',
         closeText: '×',
         localStorageKey: 'pwa-banner-dismissed',
-        // Set to true if you want to check for specific domain
         checkDomain: false,
         allowedDomains: ['m.mcb777', 'm.mcb177'],
-        // iOS instructions
         showIOSInstructions: true,
         iosInstructions: 'Tap the share button <img src="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\'%3E%3Cpath fill=\'%23000\' d=\'M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z\'/%3E%3C/svg%3E" style="width:16px;height:16px;vertical-align:middle;"> and select "Add to Home Screen"',
-        // Auto-trigger install prompt when available (makes it more automated)
         autoTriggerInstall: false, // Set to true to auto-show install prompt after banner appears
         autoTriggerDelay: 2000, // Delay in milliseconds before auto-triggering (2000 = 2 seconds)
     };
@@ -750,6 +727,19 @@
                 }
             }, 1000);
         }
+
+        // For third-party sites: Show banner by default after a delay
+        // This ensures banner appears even if site doesn't have PWA setup
+        // The banner will show instructions if PWA isn't available
+        setTimeout(() => {
+            if (!document.getElementById(CONFIG.bannerId)) {
+                // Only show if not in standalone mode and not dismissed
+                if (!isStandalone() && !isBannerDismissed()) {
+                    console.log('PWA Install Banner: Showing banner for third-party site');
+                    createBanner();
+                }
+            }
+        }, 2000); // Show after 2 seconds
 
         // Also listen for appinstalled event
         window.addEventListener('appinstalled', () => {
