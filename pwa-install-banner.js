@@ -3,33 +3,90 @@
     'use strict';
 
     // Script version - increment this when making changes to force cache refresh
-    const SCRIPT_VERSION = '2.1.0';
+    const SCRIPT_VERSION = '2.1.1';
     
-    const CONFIG = {
+    // Default configuration
+    const DEFAULT_CONFIG = {
         bannerId: 'pwa-install-banner',
-        logoUrl: 'https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/favicon-1.png', // PNG icon for PWA
-        appName: 'MachiBet',
-        appNameBn: 'MachiBet',
-        title: 'Official App',
-        titleBn: 'অফিসিয়াল অ্যাপ',
-        description: 'Sports app, Entertainment app<br>Play anytime, anywhere',
-        descriptionBn: 'স্পোর্টস অ্যাপ, এন্টারটেইনমেন্ট অ্যাপ<br>খেলুন এনি টাইম এনি প্লেস',
-        installText: 'Install',
-        installTextBn: 'ইনস্টল',
-        closeText: '×',
+        logoUrl: 'https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/favicon-1.png',
         localStorageKey: 'pwa-banner-dismissed',
         checkDomain: false,
         allowedDomains: ['m.mcb777', 'm.mcb177'],
         showIOSInstructions: true,
-        iosInstructions: 'Tap the share button <img src="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\'%3E%3Cpath fill=\'%23000\' d=\'M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z\'/%3E%3C/svg%3E" style="width:16px;height:16px;vertical-align:middle;"> and select "Add to Home Screen"',
-        autoTriggerInstall: false, // Set to true to auto-show install prompt after banner appears
-        autoTriggerDelay: 2000, // Delay in milliseconds before auto-triggering (2000 = 2 seconds)
-        manifestUrl: 'https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/manifest.json', // Hosted manifest URL
-        injectManifest: true, // Set to true to inject manifest for third-party sites
+        autoTriggerInstall: false,
+        autoTriggerDelay: 2000,
+        manifestUrl: 'https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/manifest.json',
+        injectManifest: true,
     };
+
+    // i18n translations
+    const i18n = {
+        en: {
+            appName: 'MachiBet',
+            title: 'Official App',
+            description: 'Sports app, Entertainment app<br>Play anytime, anywhere',
+            installText: 'Install',
+            closeText: '×',
+            iosInstructions: 'Tap the share button and select "Add to Home Screen"'
+        },
+        bn: {
+            appName: 'MachiBet',
+            title: 'অফিসিয়াল অ্যাপ',
+            description: 'স্পোর্টস অ্যাপ, এন্টারটেইনমেন্ট অ্যাপ<br>খেলুন এনি টাইম এনি প্লেস',
+            installText: 'ইনস্টল',
+            closeText: '×',
+            iosInstructions: 'শেয়ার বোতামে ট্যাপ করুন এবং "হোম স্ক্রিনে যোগ করুন" নির্বাচন করুন'
+        }
+    };
+
+    // Current language (default: auto-detect)
+    let currentLang = null;
+    let CONFIG = Object.assign({}, DEFAULT_CONFIG);
+    let isInitialized = false;
     
     // Log script version for debugging
     console.log('PWA Install Banner Script v' + SCRIPT_VERSION + ' loaded');
+    
+    /**
+     * Get current language
+     * Checks: init options, document.documentElement.lang, URL param, localStorage
+     */
+    function getLang() {
+        // If language was set via init(), use it
+        if (currentLang) {
+            return currentLang;
+        }
+        
+        // Check document lang attribute
+        const docLang = document.documentElement.lang;
+        if (docLang && (docLang === 'bn' || docLang.startsWith('bn-'))) {
+            return 'bn';
+        }
+        
+        // Check URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('lang') === 'bn') {
+            return 'bn';
+        }
+        
+        // Check localStorage marketing campaign
+        const marketingCampaign = localStorage.getItem('marketing_campaign');
+        if (marketingCampaign && marketingCampaign.includes('BD_BN')) {
+            return 'bn';
+        }
+        
+        // Default to English
+        return 'en';
+    }
+    
+    /**
+     * Get localized text
+     */
+    function getLocalizedText(key) {
+        const lang = getLang();
+        const translations = i18n[lang] || i18n.en;
+        return translations[key] || i18n.en[key] || '';
+    }
 
     /**
      * Check if app is running in standalone mode (installed PWA)
@@ -228,58 +285,6 @@
         return hasManifest() || hasServiceWorker();
     }
 
-    /**
-     * Check if Bengali language is enabled
-     * Checks: URL param (?lang=bn), localStorage marketing_campaign, or script data attribute
-     */
-    function isBengali() {
-        // Check URL parameter
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('lang') === 'bn') {
-            console.log('PWA Install Banner: Bengali detected via URL param');
-            return true;
-        }
-        
-        // Check localStorage marketing campaign
-        const marketingCampaign = localStorage.getItem('marketing_campaign');
-        if (marketingCampaign && marketingCampaign.includes('BD_BN')) {
-            console.log('PWA Install Banner: Bengali detected via localStorage:', marketingCampaign);
-            return true;
-        }
-        
-        // Check script data attribute
-        const scripts = document.getElementsByTagName('script');
-        for (let script of scripts) {
-            if (script.src && script.src.includes('pwa-install-banner.js')) {
-                const dataLang = script.getAttribute('data-lang');
-                const dataBengali = script.getAttribute('data-bengali');
-                if (dataLang === 'bn' || dataBengali === 'true') {
-                    console.log('PWA Install Banner: Bengali detected via script data attribute');
-                    return true;
-                }
-            }
-        }
-        
-        console.log('PWA Install Banner: English mode (Bengali not detected)');
-        return false;
-    }
-
-    /**
-     * Get localized text based on language detection
-     */
-    function getLocalizedText(key) {
-        const bnKey = key + 'Bn';
-        const isBn = isBengali();
-        
-        if (isBn && CONFIG[bnKey]) {
-            console.log(`PWA Install Banner: Using Bengali text for "${key}":`, CONFIG[bnKey]);
-            return CONFIG[bnKey];
-        }
-        
-        const text = CONFIG[key];
-        console.log(`PWA Install Banner: Using English text for "${key}":`, text);
-        return text;
-    }
 
     /**
      * Create and inject the banner HTML
@@ -852,12 +857,28 @@
 
     /**
      * Initialize the PWA install banner
+     * @param {Object} opts - Configuration options
+     * @param {string} opts.lang - Language code ('en' or 'bn')
+     * @param {Object} opts.config - Additional config overrides
      */
-    function init() {
+    function init(opts = {}) {
+        // Merge user config with defaults
+        if (opts.config) {
+            CONFIG = Object.assign({}, DEFAULT_CONFIG, opts.config);
+        }
+        
+        // Set language if provided
+        if (opts.lang && (opts.lang === 'en' || opts.lang === 'bn')) {
+            currentLang = opts.lang;
+            console.log('PWA Install Banner: Language set to', currentLang);
+        }
+        
         // Log initialization with version
         console.log('PWA Install Banner: Initializing v' + SCRIPT_VERSION);
+        console.log('PWA Install Banner: Current language:', getLang());
         console.log('PWA Install Banner: Current URL:', window.location.href);
-        console.log('PWA Install Banner: User Agent:', navigator.userAgent);
+        
+        isInitialized = true;
         
         // Inject manifest for third-party sites if enabled (do this FIRST, before anything else)
         if (CONFIG.injectManifest) {
@@ -929,25 +950,51 @@
         });
     }
 
-    // Auto-initialize when script loads
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        // DOM already loaded
-        init();
-    }
-
-    // Export functions for manual control if needed
-    window.PWAInstallBanner = {
+    // Create and expose PWAInstallBanner API
+    const PWAInstallBanner = {
+        init: function(opts) {
+            console.log('PWA Install Banner: init() called with options:', opts);
+            init(opts);
+        },
         show: showBanner,
         hide: hideBanner,
-        init: init,
         isStandalone: isStandalone,
-        create: createBanner, // Export createBanner for manual creation
+        create: createBanner,
         isTestMode: isTestMode,
-        hasManifest: hasManifest, // Check if third-party site has manifest
-        hasServiceWorker: hasServiceWorker, // Check if third-party site has service worker
-        hasPWACapabilities: hasPWACapabilities, // Check if third-party site has PWA setup
+        hasManifest: hasManifest,
+        hasServiceWorker: hasServiceWorker,
+        hasPWACapabilities: hasPWACapabilities,
+        getLang: getLang,
+        setLang: function(lang) {
+            if (lang === 'en' || lang === 'bn') {
+                currentLang = lang;
+                console.log('PWA Install Banner: Language changed to', lang);
+                // Recreate banner with new language if it exists
+                const banner = document.getElementById(CONFIG.bannerId);
+                if (banner) {
+                    banner.remove();
+                    createBanner();
+                }
+            }
+        },
+        version: SCRIPT_VERSION
     };
+
+    // Explicitly attach to window - MUST exist before auto-init
+    window.PWAInstallBanner = PWAInstallBanner;
+    
+    // Auto-initialize when script loads (only if not already initialized)
+    if (!isInitialized) {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                if (!isInitialized) {
+                    init();
+                }
+            });
+        } else {
+            // DOM already loaded
+            init();
+        }
+    }
 
 })();
