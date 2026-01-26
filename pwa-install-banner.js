@@ -123,50 +123,51 @@
             manifestLink = document.createElement('link');
             manifestLink.rel = 'manifest';
             document.head.appendChild(manifestLink);
+            console.log('PWA Install Banner: Created manifest link element');
+        } else {
+            console.log('PWA Install Banner: Manifest link already exists:', manifestLink.href);
         }
         
-        // Set manifest URL - use your hosted manifest
-        // For third-party sites, they need to host their own manifest
-        // But we can create a dynamic one via data URI or hosted endpoint
-        const manifestUrl = CONFIG.manifestUrl || 'https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/manifest.json';
-        
-        // Create dynamic manifest based on language
-        const manifestData = {
-            name: getLocalizedText('appName'),
-            short_name: getLocalizedText('appName'),
-            description: getLocalizedText('description').replace(/<br>/g, ' '),
-            start_url: window.location.origin + '/',
-            display: 'standalone',
-            background_color: '#ffffff',
-            theme_color: '#016ecf',
-            orientation: 'portrait-primary',
-            icons: [
-                {
-                    src: CONFIG.logoUrl,
-                    sizes: '192x192',
-                    type: 'image/x-icon',
-                    purpose: 'any'
-                },
-                {
-                    src: CONFIG.logoUrl,
-                    sizes: '512x512',
-                    type: 'image/x-icon',
-                    purpose: 'any'
-                }
-            ],
-            categories: ['entertainment', 'sports', 'games']
-        };
-        
-        // Use hosted manifest URL if available, otherwise create dynamic one
+        // Always use hosted manifest URL (more reliable than blob URLs)
         if (CONFIG.manifestUrl) {
-            manifestLink.href = CONFIG.manifestUrl;
-            console.log('PWA Install Banner: Using hosted manifest:', CONFIG.manifestUrl);
+            manifestLink.href = CONFIG.manifestUrl + '?v=' + Date.now(); // Cache bust
+            console.log('PWA Install Banner: Set manifest URL to:', manifestLink.href);
         } else {
-            // Create blob URL for dynamic manifest
+            // Fallback: Create dynamic manifest
+            const manifestData = {
+                name: getLocalizedText('appName'),
+                short_name: getLocalizedText('appName'),
+                description: getLocalizedText('description').replace(/<br>/g, ' '),
+                start_url: window.location.origin + '/',
+                display: 'standalone',
+                background_color: '#ffffff',
+                theme_color: '#016ecf',
+                orientation: 'portrait-primary',
+                icons: [
+                    {
+                        src: CONFIG.logoUrl,
+                        sizes: 'any',
+                        type: 'image/x-icon',
+                        purpose: 'any'
+                    },
+                    {
+                        src: CONFIG.logoUrl,
+                        sizes: '192x192',
+                        type: 'image/x-icon'
+                    },
+                    {
+                        src: CONFIG.logoUrl,
+                        sizes: '512x512',
+                        type: 'image/x-icon'
+                    }
+                ],
+                categories: ['entertainment', 'sports', 'games']
+            };
+            
             const blob = new Blob([JSON.stringify(manifestData, null, 2)], { type: 'application/json' });
             const blobUrl = URL.createObjectURL(blob);
             manifestLink.href = blobUrl;
-            console.log('PWA Install Banner: Created dynamic manifest');
+            console.log('PWA Install Banner: Created dynamic manifest with blob URL');
         }
         
         // Also add theme color meta tag
@@ -175,7 +176,18 @@
             themeColor.name = 'theme-color';
             themeColor.content = '#016ecf';
             document.head.appendChild(themeColor);
+            console.log('PWA Install Banner: Added theme-color meta tag');
         }
+        
+        // Force browser to re-read manifest by removing and re-adding (if needed)
+        setTimeout(() => {
+            const currentManifest = document.querySelector('link[rel="manifest"]');
+            if (currentManifest && currentManifest.href) {
+                console.log('PWA Install Banner: Manifest link confirmed:', currentManifest.href);
+                // Trigger a re-check by dispatching a custom event
+                window.dispatchEvent(new Event('appinstalled'));
+            }
+        }, 100);
     }
 
     /**
