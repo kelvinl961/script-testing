@@ -332,11 +332,13 @@
                 deferredPrompt = null;
             });
         } else if (isIOS()) {
-            // iOS Safari - show instructions
+            // iOS Safari - Note: Auto-install is NOT possible on iOS due to Apple security restrictions
+            // iOS requires manual user action: Share button → Add to Home Screen
+            // We can only guide the user through the process
             if (CONFIG.showIOSInstructions) {
-                const instructions = getLocalizedText('iosInstructions') || CONFIG.iosInstructions;
-                // Create a nicer modal instead of alert
-                showInstallInstructions(instructions);
+                // Try to detect if we can do anything programmatically (we can't, but check anyway)
+                // On iOS, we can only show instructions - no programmatic install possible
+                showIOSInstallGuide();
             }
         } else {
             // No prompt available - check if third-party site has PWA setup
@@ -439,7 +441,45 @@
     }
 
     /**
-     * Show iOS install instructions in a styled modal
+     * Show iOS install guide (Note: Auto-install is NOT possible on iOS due to Apple restrictions)
+     * iOS requires manual user action: Share button → Add to Home Screen
+     */
+    function showIOSInstallGuide() {
+        // Check if we're in a webview that might support programmatic install (unlikely but check)
+        const isInWebView = window.navigator.standalone === false && 
+                           (window.navigator.userAgent.includes('wv') || 
+                            window.navigator.userAgent.includes('WebView'));
+        
+        let message = '';
+        if (isInWebView) {
+            // In webview - might have different capabilities, but still unlikely
+            message = `To install this app on iOS:\n\n` +
+                     `1. Tap the Share button (square with arrow) at the bottom\n` +
+                     `2. Scroll down and tap "Add to Home Screen"\n` +
+                     `3. Tap "Add" to confirm\n\n` +
+                     `Note: iOS requires manual installation for security.`;
+        } else {
+            // Standard Safari - must use share button
+            message = `📱 Install on iOS:\n\n` +
+                     `1. Tap the Share button (square with arrow ↑) at the bottom of Safari\n` +
+                     `2. Scroll down in the share menu\n` +
+                     `3. Tap "Add to Home Screen"\n` +
+                     `4. Tap "Add" to confirm\n\n` +
+                     `⚠️ Note: iOS requires manual installation. Auto-install is not possible due to Apple security restrictions.`;
+        }
+        
+        createInstallModal({
+            title: '📱 Install MachiBet App',
+            message: message,
+            buttonText: 'I Understand',
+            onConfirm: () => {
+                // Close modal
+            }
+        });
+    }
+
+    /**
+     * Show iOS install instructions in a styled modal (legacy function)
      */
     function showInstallInstructions(instructions) {
         // Remove HTML tags for cleaner display
@@ -710,36 +750,20 @@
             }
         });
 
-        // For iOS, show banner immediately (no beforeinstallprompt event)
-        if (isIOS()) {
-            // Small delay to ensure DOM is ready
-            setTimeout(() => {
-                createBanner();
-            }, 500);
-        }
-
-        // Test mode: Show banner after a delay if beforeinstallprompt doesn't fire
-        if (isTestMode()) {
-            console.log('PWA Install Banner: Test mode enabled');
-            setTimeout(() => {
-                if (!document.getElementById(CONFIG.bannerId)) {
-                    createBanner();
-                }
-            }, 1000);
-        }
-
-        // For third-party sites: Show banner by default after a delay
-        // This ensures banner appears even if site doesn't have PWA setup
-        // The banner will show instructions if PWA isn't available
+        // Show banner on all platforms (iOS, Android, Desktop)
+        // iOS: Show immediately (no beforeinstallprompt event)
+        // Desktop/Android: Show after short delay if beforeinstallprompt doesn't fire
+        const showBannerDelay = isIOS() ? 500 : 1000;
+        
         setTimeout(() => {
             if (!document.getElementById(CONFIG.bannerId)) {
                 // Only show if not in standalone mode and not dismissed
                 if (!isStandalone() && !isBannerDismissed()) {
-                    console.log('PWA Install Banner: Showing banner for third-party site');
+                    console.log('PWA Install Banner: Showing banner');
                     createBanner();
                 }
             }
-        }, 2000); // Show after 2 seconds
+        }, showBannerDelay);
 
         // Also listen for appinstalled event
         window.addEventListener('appinstalled', () => {
