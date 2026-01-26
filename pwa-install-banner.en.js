@@ -3,7 +3,7 @@
     'use strict';
 
     // Script version - increment this when making changes to force cache refresh
-    const SCRIPT_VERSION = '2.1.6';
+    const SCRIPT_VERSION = '2.1.7';
     
     // Default configuration
     const DEFAULT_CONFIG = {
@@ -225,7 +225,7 @@
                 start_url: window.location.origin + '/',
                 display: 'standalone',
                 background_color: '#ffffff',
-                theme_color: '#ffffff',
+                theme_color: '#016ecf',
                 orientation: 'portrait-primary',
                 icons: [
                     {
@@ -250,15 +250,15 @@
             console.log('PWA Install Banner: Created dynamic manifest with blob URL');
         }
         
-        // Also add theme color meta tag (white to match banner)
+        // Also add theme color meta tag (blue to match banner)
         let themeColorMeta = document.querySelector('meta[name="theme-color"]');
         if (!themeColorMeta) {
             themeColorMeta = document.createElement('meta');
             themeColorMeta.name = 'theme-color';
             document.head.appendChild(themeColorMeta);
         }
-        themeColorMeta.content = '#ffffff'; // White to match banner background
-        console.log('PWA Install Banner: Set theme-color to white');
+        themeColorMeta.content = '#016ecf'; // Blue to match banner background
+        console.log('PWA Install Banner: Set theme-color to blue');
         
         // Verify icon is accessible
         const iconImg = new Image();
@@ -329,7 +329,7 @@
             position: sticky;
             top: 0;
             z-index: 9999;
-            background: white;
+            background: linear-gradient(135deg, #016ecf 0%, #022a6a 100%);
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         `;
@@ -340,7 +340,7 @@
         closeBtn.style.cssText = `
             background: transparent;
             border: none;
-            color: #333;
+            color: white;
             font-size: 24px;
             font-weight: bold;
             cursor: pointer;
@@ -406,7 +406,7 @@
             font-size: 13px;
             font-weight: 600;
             margin: 0 0 4px 0;
-            color: #333;
+            color: white;
             line-height: 1.2;
         `;
 
@@ -417,7 +417,7 @@
             font-size: 11px;
             font-weight: 400;
             margin: 0;
-            color: #666;
+            color: rgba(255,255,255,0.9);
             line-height: 1.3;
         `;
 
@@ -435,8 +435,8 @@
         installBtn.style.cssText = `
             font-size: 13px;
             font-weight: 600;
-            background: linear-gradient(135deg, #016ecf 0%, #022a6a 100%);
-            color: white;
+            background: white;
+            color: #016ecf;
             padding: 8px 16px;
             border: none;
             border-radius: 6px;
