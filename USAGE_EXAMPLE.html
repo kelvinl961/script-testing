@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Install Banner Usage Example</title>
+</head>
+<body>
+    <h1>PWA Install Banner Usage Examples</h1>
+    
+    <h2>Example 1: Auto-detect language</h2>
+    <pre><code>&lt;script src="https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/pwa-install-banner.2.1.1.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  // Auto-initializes with language detection
+  // Checks: document.documentElement.lang, URL param, localStorage
+&lt;/script&gt;</code></pre>
+    
+    <h2>Example 2: Force Bengali language</h2>
+    <pre><code>&lt;script src="https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/pwa-install-banner.2.1.1.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  window.PWAInstallBanner.init({
+    lang: 'bn'
+  });
+&lt;/script&gt;</code></pre>
+    
+    <h2>Example 3: Force English language</h2>
+    <pre><code>&lt;script src="https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/pwa-install-banner.2.1.1.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  window.PWAInstallBanner.init({
+    lang: 'en'
+  });
+&lt;/script&gt;</code></pre>
+    
+    <h2>Example 4: With custom config</h2>
+    <pre><code>&lt;script src="https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/pwa-install-banner.2.1.1.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  window.PWAInstallBanner.init({
+    lang: 'bn',
+    config: {
+      logoUrl: 'https://example.com/logo.png',
+      autoTriggerInstall: true
+    }
+  });
+&lt;/script&gt;</code></pre>
+    
+    <h2>API Methods</h2>
+    <pre><code>// Check if available
+console.log(window.PWAInstallBanner); // Should NOT be undefined
+
+// Initialize
+window.PWAInstallBanner.init({ lang: 'bn' });
+
+// Show banner manually
+window.PWAInstallBanner.show();
+
+// Hide banner
+window.PWAInstallBanner.hide();
+
+// Get current language
+console.log(window.PWAInstallBanner.getLang()); // 'en' or 'bn'
+
+// Change language dynamically
+window.PWAInstallBanner.setLang('bn');
+
+// Check if PWA is installed
+console.log(window.PWAInstallBanner.isStandalone());
+
+// Get version
+console.log(window.PWAInstallBanner.version); // '2.1.1'</code></pre>
+    
+    <h2>Cache Busting</h2>
+    <p>Use versioned filename OR query string:</p>
+    <pre><code>// Option 1: Versioned filename (RECOMMENDED)
+&lt;script src="https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/pwa-install-banner.2.1.1.js"&gt;&lt;/script&gt;
+
+// Option 2: Query string
+&lt;script src="https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/pwa-install-banner.js?v=2.1.1"&gt;&lt;/script&gt;</code></pre>
+    
+    <h2>Purge CDN Cache</h2>
+    <p>After updating, purge cache:</p>
+    <pre><code>https://purge.jsdelivr.net/gh/kelvinl961/script-testing@main/pwa-install-banner.2.1.1.js</code></pre>
+</body>
+</html>
