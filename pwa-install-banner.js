@@ -41,6 +41,9 @@
 
     // Current language - set based on script filename
     // This will be overridden in the separate .en.js and .bn.js files
+    // For main script: null (auto-detect)
+    // For .en.js: "en" (hardcoded)
+    // For .bn.js: "bn" (hardcoded)
     let currentLang = null;
     let CONFIG = Object.assign({}, DEFAULT_CONFIG);
     let isInitialized = false;
