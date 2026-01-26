@@ -325,7 +325,7 @@
 
         // Close button
         const closeBtn = document.createElement('button');
-        closeBtn.innerHTML = CONFIG.closeText;
+        closeBtn.innerHTML = getLocalizedText('closeText') || '×';
         closeBtn.style.cssText = `
             background: transparent;
             border: none;
