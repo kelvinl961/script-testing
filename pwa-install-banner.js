@@ -2,6 +2,9 @@
 (function() {
     'use strict';
 
+    // Script version - increment this when making changes to force cache refresh
+    const SCRIPT_VERSION = '2.0.1';
+    
     const CONFIG = {
         bannerId: 'pwa-install-banner',
         logoUrl: 'https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/favicon-1.png', // PNG icon for PWA
@@ -24,6 +27,9 @@
         manifestUrl: 'https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/manifest.json', // Hosted manifest URL
         injectManifest: true, // Set to true to inject manifest for third-party sites
     };
+    
+    // Log script version for debugging
+    console.log('PWA Install Banner Script v' + SCRIPT_VERSION + ' loaded');
 
     /**
      * Check if app is running in standalone mode (installed PWA)
@@ -848,6 +854,11 @@
      * Initialize the PWA install banner
      */
     function init() {
+        // Log initialization with version
+        console.log('PWA Install Banner: Initializing v' + SCRIPT_VERSION);
+        console.log('PWA Install Banner: Current URL:', window.location.href);
+        console.log('PWA Install Banner: User Agent:', navigator.userAgent);
+        
         // Inject manifest for third-party sites if enabled (do this FIRST, before anything else)
         if (CONFIG.injectManifest) {
             // Always inject/update manifest to ensure it's using our hosted version

@@ -1,0 +1,30 @@
+<!-- PWA Install Banner Script for Third-Party Injection -->
+<!-- Add this script tag to the third-party website (e.g., mcb777.com) -->
+<!-- Place it in <head> or before </body> -->
+
+<!-- PWA Install Banner Script for Third-Party Injection -->
+<!-- Add this script tag to the third-party website (e.g., mcb777.com) -->
+<!-- Place it in <head> or before </body> -->
+<!-- IMPORTANT: The ?v= parameter forces cache refresh - update it when you deploy new versions -->
+
+<script type="text/javascript">
+(function(){
+    var s = document.createElement('script');
+    s.type = 'text/javascript';
+    // Add cache busting parameter - update version number when deploying new changes
+    s.src = 'https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/pwa-install-banner.js?v=' + Date.now();
+    s.async = true;
+    document.getElementsByTagName('head')[0].appendChild(s);
+})();
+</script>
+
+<!-- Alternative: Use fixed version number for production (easier to track) -->
+<!-- <script type="text/javascript">
+(function(){
+    var s = document.createElement('script');
+    s.type = 'text/javascript';
+    s.src = 'https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/pwa-install-banner.js?v=2.0';
+    s.async = true;
+    document.getElementsByTagName('head')[0].appendChild(s);
+})();
+</script> -->
