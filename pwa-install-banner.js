@@ -3,7 +3,7 @@
     'use strict';
 
     // Script version - increment this when making changes to force cache refresh
-    const SCRIPT_VERSION = '2.0.1';
+    const SCRIPT_VERSION = '2.1.0';
     
     const CONFIG = {
         bannerId: 'pwa-install-banner',
