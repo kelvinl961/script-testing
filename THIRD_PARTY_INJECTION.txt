@@ -2,30 +2,47 @@
 <!-- Add this script tag to the third-party website (e.g., mcb777.com) -->
 <!-- Place it in <head> or before </body> -->
 
-<!-- PWA Install Banner Script for Third-Party Injection -->
-<!-- Add this script tag to the third-party website (e.g., mcb777.com) -->
-<!-- Place it in <head> or before </body> -->
-<!-- IMPORTANT: The ?v= parameter forces cache refresh - update it when you deploy new versions -->
+<!-- ============================================ -->
+<!-- OPTION 1: Use Separate Language Scripts (RECOMMENDED) -->
+<!-- ============================================ -->
 
-<script type="text/javascript">
-(function(){
-    var s = document.createElement('script');
-    s.type = 'text/javascript';
-    // Add cache busting parameter - update version number when deploying new changes
-    s.src = 'https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/pwa-install-banner.js?v=' + Date.now();
-    s.async = true;
-    document.getElementsByTagName('head')[0].appendChild(s);
-})();
+<!-- For English Version -->
+<script src="https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/pwa-install-banner.en.js"></script>
+
+<!-- OR For Bengali Version -->
+<script src="https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/pwa-install-banner.bn.js"></script>
+
+<!-- ============================================ -->
+<!-- OPTION 2: Use Main Script with Language Setting -->
+<!-- ============================================ -->
+
+<!-- For Bengali -->
+<script src="https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/pwa-install-banner.js"></script>
+<script>
+  window.PWAInstallBanner.clearDismissal();
+  window.PWAInstallBanner.init({
+    lang: 'bn',
+    forceShow: true
+  });
 </script>
 
-<!-- Alternative: Use fixed version number for production (easier to track) -->
-<!-- Update version number when deploying new changes -->
-<script type="text/javascript">
-(function(){
-    var s = document.createElement('script');
-    s.type = 'text/javascript';
-    s.src = 'https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/pwa-install-banner.js?v=2.1.0';
-    s.async = true;
-    document.getElementsByTagName('head')[0].appendChild(s);
-})();
+<!-- For English -->
+<script src="https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/pwa-install-banner.js"></script>
+<script>
+  window.PWAInstallBanner.clearDismissal();
+  window.PWAInstallBanner.init({
+    lang: 'en',
+    forceShow: true
+  });
 </script>
+
+<!-- ============================================ -->
+<!-- RECOMMENDED: Use Separate Scripts -->
+<!-- ============================================ -->
+<!-- 
+  Benefits:
+  - Simpler (no init() needed)
+  - Faster (no language detection)
+  - Clearer (filename shows language)
+  - No cache issues
+-->
