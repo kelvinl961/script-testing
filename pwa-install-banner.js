@@ -178,11 +178,13 @@
         // Verify icon is accessible
         const iconImg = new Image();
         iconImg.onload = function() {
-            console.log('PWA Install Banner: Icon is accessible:', CONFIG.logoUrl);
+            console.log('✅ PWA Install Banner: Icon loaded successfully:', CONFIG.logoUrl);
+            console.log('✅ PWA Install Banner: Icon dimensions:', iconImg.width + 'x' + iconImg.height);
         };
         iconImg.onerror = function() {
-            console.warn('PWA Install Banner: Icon failed to load:', CONFIG.logoUrl);
-            console.warn('PWA Install Banner: Browser may show default icon. ICO files may not work for PWA - consider using PNG.');
+            console.error('❌ PWA Install Banner: Icon FAILED to load:', CONFIG.logoUrl);
+            console.error('❌ PWA Install Banner: Check if URL is accessible and CORS is enabled');
+            console.error('❌ PWA Install Banner: Browser will show default icon');
         };
         iconImg.src = CONFIG.logoUrl;
         
@@ -228,11 +230,14 @@
         // Check URL parameter
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('lang') === 'bn') {
+            console.log('PWA Install Banner: Bengali detected via URL param');
             return true;
         }
         
         // Check localStorage marketing campaign
-        if (localStorage.getItem('marketing_campaign')?.includes('BD_BN')) {
+        const marketingCampaign = localStorage.getItem('marketing_campaign');
+        if (marketingCampaign && marketingCampaign.includes('BD_BN')) {
+            console.log('PWA Install Banner: Bengali detected via localStorage:', marketingCampaign);
             return true;
         }
         
@@ -240,12 +245,16 @@
         const scripts = document.getElementsByTagName('script');
         for (let script of scripts) {
             if (script.src && script.src.includes('pwa-install-banner.js')) {
-                if (script.getAttribute('data-lang') === 'bn' || script.getAttribute('data-bengali') === 'true') {
+                const dataLang = script.getAttribute('data-lang');
+                const dataBengali = script.getAttribute('data-bengali');
+                if (dataLang === 'bn' || dataBengali === 'true') {
+                    console.log('PWA Install Banner: Bengali detected via script data attribute');
                     return true;
                 }
             }
         }
         
+        console.log('PWA Install Banner: English mode (Bengali not detected)');
         return false;
     }
 
@@ -254,12 +263,16 @@
      */
     function getLocalizedText(key) {
         const bnKey = key + 'Bn';
+        const isBn = isBengali();
         
-        if (isBengali() && CONFIG[bnKey]) {
+        if (isBn && CONFIG[bnKey]) {
+            console.log(`PWA Install Banner: Using Bengali text for "${key}":`, CONFIG[bnKey]);
             return CONFIG[bnKey];
         }
         
-        return CONFIG[key];
+        const text = CONFIG[key];
+        console.log(`PWA Install Banner: Using English text for "${key}":`, text);
+        return text;
     }
 
     /**
@@ -612,7 +625,7 @@
         const textOnly = instructions.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
         
         createInstallModal({
-            title: '📱 iOS Installation Instructions',
+            title: 'iOS Installation Instructions',
             message: textOnly,
             buttonText: 'Got it',
             onConfirm: () => {
