@@ -3,7 +3,7 @@
     'use strict';
 
     
-    const SCRIPT_VERSION = '2.3.1-en';
+    const SCRIPT_VERSION = '2.3.2-en';
     
     
     const DEFAULT_CONFIG = {
@@ -20,7 +20,7 @@
         injectManifest: true,
         registerServiceWorker: true,
         serviceWorkerUrl: '/sw.js',
-        installPromptWaitMs: 8000,
+        installPromptWaitMs: 15000,
         // Embed sites (m.mcb777): build manifest on current origin — required for Android install.
         useDynamicManifest: true,
     };
@@ -80,6 +80,7 @@
     let deferredPrompt = null;
     let installPromptWaiters = [];
     let swRegistrationPromise = null;
+    let androidInstallReadyPromise = null;
     
     
     console.log('PWA Install Banner Script v' + SCRIPT_VERSION + ' loaded');
@@ -240,18 +241,64 @@
         return swRegistrationPromise;
     }
 
+        function prepareAndroidInstall() {
+        if (!isAndroid() || !isSecureContext() || isInAppBrowser()) {
+            return Promise.resolve(deferredPrompt);
+        }
+        if (deferredPrompt) {
+            return Promise.resolve(deferredPrompt);
+        }
+        if (androidInstallReadyPromise) {
+            return androidInstallReadyPromise;
+        }
+        androidInstallReadyPromise = (async () => {
+            await ensureServiceWorker();
+            if (!deferredPrompt) {
+                await waitForInstallPrompt(CONFIG.installPromptWaitMs || 15000);
+            }
+            return deferredPrompt;
+        })().finally(() => {
+            androidInstallReadyPromise = null;
+        });
+        return androidInstallReadyPromise;
+    }
+
+        function refreshInstallButtonState() {
+        const installBtn = document.getElementById('pwa-install-button');
+        if (!installBtn || !isAndroid()) {
+            return;
+        }
+        if (deferredPrompt) {
+            installBtn.disabled = false;
+            installBtn.style.opacity = '1';
+            installBtn.style.cursor = 'pointer';
+            if (installBtn.dataset.loading !== 'true') {
+                installBtn.innerHTML = getLocalizedText('androidInstallText') || getLocalizedText('installText') || 'Install';
+            }
+            return;
+        }
+        if (isSecureContext() && !isInAppBrowser()) {
+            installBtn.innerHTML = getLocalizedText('androidPreparing') || 'Preparing…';
+            installBtn.disabled = true;
+            installBtn.style.opacity = '0.85';
+            installBtn.style.cursor = 'wait';
+        }
+    }
+
         function setInstallButtonLoading(isLoading) {
         const installBtn = document.getElementById('pwa-install-button');
         if (!installBtn) {
             return;
         }
         if (isLoading) {
+            installBtn.dataset.loading = 'true';
             installBtn.dataset.originalText = installBtn.innerHTML;
             installBtn.innerHTML = getLocalizedText('androidPreparing') || 'Preparing…';
             installBtn.disabled = true;
             installBtn.style.opacity = '0.85';
             installBtn.style.cursor = 'wait';
         } else {
+            installBtn.dataset.loading = 'false';
             installBtn.innerHTML = installBtn.dataset.originalText || getLocalizedText('androidInstallText') || getLocalizedText('installText') || 'Install';
             installBtn.disabled = false;
             installBtn.style.opacity = '1';
@@ -543,6 +590,13 @@
         });
         installBtn.addEventListener('click', handleInstallClick);
 
+        if (isAndroid() && !isInAppBrowser() && isSecureContext()) {
+            refreshInstallButtonState();
+            prepareAndroidInstall().then(() => {
+                refreshInstallButtonState();
+            });
+        }
+
         banner.appendChild(closeBtn);
         banner.appendChild(content);
         banner.appendChild(installBtn);
@@ -593,23 +647,11 @@
 
             setInstallButtonLoading(true);
             try {
-                if (deferredPrompt) {
-                    const outcome = await runNativeInstallPrompt();
-                    if (outcome === 'accepted') {
-                        hideBanner();
-                        dismissBanner();
-                        showSuccessMessage(getLocalizedText('installSuccess'));
-                    } else if (outcome === 'dismissed') {
-                        showSuccessMessage(getLocalizedText('installDeclined'));
-                    }
-                    return;
+                if (!deferredPrompt) {
+                    await prepareAndroidInstall();
                 }
 
-                await ensureServiceWorker();
-
-                const promptEvent = await waitForInstallPrompt(CONFIG.installPromptWaitMs || 8000);
-                if (promptEvent) {
-                    deferredPrompt = promptEvent;
+                if (deferredPrompt) {
                     const outcome = await runNativeInstallPrompt();
                     if (outcome === 'accepted') {
                         hideBanner();
@@ -988,6 +1030,7 @@
         deferredPrompt = e;
         notifyInstallPromptWaiters(e);
         console.log('PWA Install Banner: beforeinstallprompt event received - native install available');
+        refreshInstallButtonState();
         if (isInitialized && isDomainAllowed() && !isStandalone()) {
             createBanner();
             if (CONFIG.autoTriggerInstall) {
@@ -1006,6 +1049,9 @@
         }
         if (CONFIG.registerServiceWorker && isSecureContext()) {
             ensureServiceWorker();
+            if (isAndroid() && !isInAppBrowser()) {
+                prepareAndroidInstall();
+            }
         }
     }
 

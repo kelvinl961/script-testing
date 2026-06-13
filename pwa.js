@@ -7,7 +7,7 @@
     'use strict';
 
     var ALLOWED_DOMAINS = ['m.mcb777', 'm.mcb177'];
-    var BANNER_VERSION = '2.3.1';
+    var BANNER_VERSION = '2.3.2';
 
     var href = window.location.href;
     if (!ALLOWED_DOMAINS.some(function(domain) { return href.indexOf(domain) !== -1; })) {
@@ -58,7 +58,7 @@
                 injectManifest: true,
                 registerServiceWorker: true,
                 serviceWorkerUrl: '/sw.js',
-                installPromptWaitMs: 8000,
+                installPromptWaitMs: 15000,
                 localStorageKey: 'pwa-banner-dismissed'
             }
         });
