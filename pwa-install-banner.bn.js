@@ -3,7 +3,7 @@
     'use strict';
 
     
-    const SCRIPT_VERSION = '2.3.0-bn';
+    const SCRIPT_VERSION = '2.3.1-bn';
     
     
     const DEFAULT_CONFIG = {
@@ -21,8 +21,8 @@
         registerServiceWorker: true,
         serviceWorkerUrl: '/sw.js',
         installPromptWaitMs: 8000,
-        // Embed sites (m.mcb777): build manifest on current origin when /manifest.json is not hosted.
-        useDynamicManifest: false,
+        // Embed sites (m.mcb777): build manifest on current origin — required for Android install.
+        useDynamicManifest: true,
     };
 
     
@@ -374,7 +374,7 @@
         }
         
         if (CONFIG.manifestUrl || CONFIG.injectManifest) {
-            if (CONFIG.useDynamicManifest) {
+            if (CONFIG.useDynamicManifest || !CONFIG.manifestUrl) {
                 const blob = new Blob([JSON.stringify(buildDynamicManifest())], { type: 'application/manifest+json' });
                 manifestLink.href = URL.createObjectURL(blob);
             } else {
@@ -983,6 +983,32 @@
         return false;
     }
 
+        function handleBeforeInstallPrompt(e) {
+        e.preventDefault();
+        deferredPrompt = e;
+        notifyInstallPromptWaiters(e);
+        console.log('PWA Install Banner: beforeinstallprompt event received - native install available');
+        if (isInitialized && isDomainAllowed() && !isStandalone()) {
+            createBanner();
+            if (CONFIG.autoTriggerInstall) {
+                setTimeout(() => {
+                    if (deferredPrompt && document.getElementById(CONFIG.bannerId)) {
+                        handleInstallClick();
+                    }
+                }, CONFIG.autoTriggerDelay || 2000);
+            }
+        }
+    }
+
+        function earlySetup() {
+        if (CONFIG.injectManifest) {
+            injectManifest();
+        }
+        if (CONFIG.registerServiceWorker && isSecureContext()) {
+            ensureServiceWorker();
+        }
+    }
+
         function init(opts = {}) {
         
         if (opts.config) {
@@ -1041,25 +1067,9 @@
             return;
         }
 
-        
-        
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            notifyInstallPromptWaiters(e);
-            
-            console.log('PWA Install Banner: beforeinstallprompt event received - native install available');
-            
-            createBanner();
-            
-            if (CONFIG.autoTriggerInstall) {
-                setTimeout(() => {
-                    if (deferredPrompt && document.getElementById(CONFIG.bannerId)) {
-                        handleInstallClick();
-                    }
-                }, CONFIG.autoTriggerDelay || 2000);
-            }
-        });
+        if (deferredPrompt) {
+            console.log('PWA Install Banner: Native install prompt already captured before init');
+        }
 
         
         
@@ -1139,6 +1149,9 @@
 
     
     window.PWAInstallBanner = PWAInstallBanner;
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    earlySetup();
     
     
     
