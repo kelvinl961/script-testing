@@ -3,7 +3,7 @@
     'use strict';
 
     
-    const SCRIPT_VERSION = '2.3.2-bn';
+    const SCRIPT_VERSION = '2.3.3-bn';
     
     
     const DEFAULT_CONFIG = {
@@ -11,7 +11,7 @@
         logoUrl: 'https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/favicon-1.png',
         localStorageKey: 'pwa-banner-dismissed',
         checkDomain: false,
-        allowedDomains: ['m.mcb777', 'm.mcb177'],
+        allowedDomains: ['m.mcb777', 'm.mcb177', 'm.machibet.com', 'machibet.com'],
         showIOSInstructions: true,
         autoTriggerInstall: false,
         autoTriggerDelay: 2000,
@@ -20,7 +20,7 @@
         injectManifest: true,
         registerServiceWorker: true,
         serviceWorkerUrl: '/sw.js',
-        installPromptWaitMs: 15000,
+        installPromptWaitMs: 20000,
         // Embed sites (m.mcb777): build manifest on current origin — required for Android install.
         useDynamicManifest: true,
     };
@@ -74,7 +74,7 @@
     
     
     
-    let currentLang = 'bn';
+    let currentLang = null;
     let CONFIG = Object.assign({}, DEFAULT_CONFIG);
     let isInitialized = false;
     let deferredPrompt = null;
@@ -229,16 +229,42 @@
         if (swRegistrationPromise) {
             return swRegistrationPromise;
         }
-        swRegistrationPromise = navigator.serviceWorker.register(CONFIG.serviceWorkerUrl || '/sw.js', { scope: '/' })
+        const registerHosted = () => navigator.serviceWorker.register(CONFIG.serviceWorkerUrl || '/sw.js', { scope: '/' })
             .then((registration) => {
                 console.log('PWA Install Banner: Service worker registered', registration.scope);
                 return navigator.serviceWorker.ready.then(() => true);
-            })
-            .catch((error) => {
-                console.warn('PWA Install Banner: Service worker registration failed, trying blob fallback', error);
-                return registerBlobServiceWorker();
             });
+        if (CONFIG.useDynamicManifest) {
+            swRegistrationPromise = registerBlobServiceWorker()
+                .then((ok) => ok ? ok : registerHosted().catch(() => registerBlobServiceWorker()));
+        } else {
+            swRegistrationPromise = registerHosted()
+                .catch(() => registerBlobServiceWorker());
+        }
         return swRegistrationPromise;
+    }
+
+        async function waitForAndroidInstallWithRetry(maxWaitMs) {
+        const started = Date.now();
+        while (Date.now() - started < maxWaitMs) {
+            if (deferredPrompt) {
+                return deferredPrompt;
+            }
+            await ensureServiceWorker();
+            if (CONFIG.injectManifest) {
+                injectManifest();
+            }
+            const remaining = maxWaitMs - (Date.now() - started);
+            if (remaining <= 0) {
+                break;
+            }
+            await waitForInstallPrompt(Math.min(remaining, 5000));
+            if (deferredPrompt) {
+                return deferredPrompt;
+            }
+            await new Promise((resolve) => setTimeout(resolve, 400));
+        }
+        return deferredPrompt;
     }
 
         function prepareAndroidInstall() {
@@ -253,8 +279,12 @@
         }
         androidInstallReadyPromise = (async () => {
             await ensureServiceWorker();
+            if (CONFIG.injectManifest) {
+                injectManifest();
+            }
             if (!deferredPrompt) {
-                await waitForInstallPrompt(CONFIG.installPromptWaitMs || 15000);
+                await new Promise((resolve) => setTimeout(resolve, 300));
+                await waitForInstallPrompt(CONFIG.installPromptWaitMs || 20000);
             }
             return deferredPrompt;
         })().finally(() => {
@@ -268,21 +298,27 @@
         if (!installBtn || !isAndroid()) {
             return;
         }
+        if (installBtn.dataset.loading === 'true') {
+            return;
+        }
         if (deferredPrompt) {
             installBtn.disabled = false;
             installBtn.style.opacity = '1';
             installBtn.style.cursor = 'pointer';
-            if (installBtn.dataset.loading !== 'true') {
-                installBtn.innerHTML = getLocalizedText('androidInstallText') || getLocalizedText('installText') || 'Install';
-            }
+            installBtn.innerHTML = getLocalizedText('androidInstallText') || getLocalizedText('installText') || 'Install';
             return;
         }
-        if (isSecureContext() && !isInAppBrowser()) {
+        if (isSecureContext() && !isInAppBrowser() && androidInstallReadyPromise) {
             installBtn.innerHTML = getLocalizedText('androidPreparing') || 'Preparing…';
             installBtn.disabled = true;
             installBtn.style.opacity = '0.85';
             installBtn.style.cursor = 'wait';
+            return;
         }
+        installBtn.innerHTML = getLocalizedText('androidInstallText') || getLocalizedText('installText') || 'Install';
+        installBtn.disabled = false;
+        installBtn.style.opacity = '1';
+        installBtn.style.cursor = 'pointer';
     }
 
         function setInstallButtonLoading(isLoading) {
@@ -299,10 +335,7 @@
             installBtn.style.cursor = 'wait';
         } else {
             installBtn.dataset.loading = 'false';
-            installBtn.innerHTML = installBtn.dataset.originalText || getLocalizedText('androidInstallText') || getLocalizedText('installText') || 'Install';
-            installBtn.disabled = false;
-            installBtn.style.opacity = '1';
-            installBtn.style.cursor = 'pointer';
+            refreshInstallButtonState();
         }
     }
 
@@ -565,8 +598,15 @@
         
         const installBtn = document.createElement('button');
         installBtn.id = 'pwa-install-button';
-        const installText = getLocalizedText('installText') || 'Install';
-        installBtn.innerHTML = installText;
+        const androidWaiting = isAndroid() && !isInAppBrowser() && isSecureContext() && !deferredPrompt;
+        installBtn.innerHTML = androidWaiting
+            ? (getLocalizedText('androidPreparing') || 'Preparing…')
+            : (getLocalizedText('installText') || 'Install');
+        if (androidWaiting) {
+            installBtn.disabled = true;
+            installBtn.style.opacity = '0.85';
+            installBtn.style.cursor = 'wait';
+        }
         installBtn.style.cssText = `
             font-size: 13px;
             font-weight: 600;
@@ -648,7 +688,7 @@
             setInstallButtonLoading(true);
             try {
                 if (!deferredPrompt) {
-                    await prepareAndroidInstall();
+                    await waitForAndroidInstallWithRetry(CONFIG.installPromptWaitMs || 20000);
                 }
 
                 if (deferredPrompt) {
@@ -663,7 +703,7 @@
                     return;
                 }
 
-                showAndroidInstallUnavailable();
+                console.warn('PWA Install Banner: Install prompt not ready — tap Install again shortly');
             } finally {
                 setInstallButtonLoading(false);
             }
