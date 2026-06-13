@@ -7,7 +7,7 @@
     'use strict';
 
     var ALLOWED_DOMAINS = ['m.mcb777', 'm.mcb177'];
-    var BANNER_VERSION = '2.3.3';
+    var BANNER_VERSION = '2.4.0';
 
     var href = window.location.href;
     if (!ALLOWED_DOMAINS.some(function(domain) { return href.indexOf(domain) !== -1; })) {

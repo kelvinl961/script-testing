@@ -3,7 +3,7 @@
     'use strict';
 
     
-    const SCRIPT_VERSION = '2.3.3-en';
+    const SCRIPT_VERSION = '2.4.0-en';
     
     
     const DEFAULT_CONFIG = {
@@ -244,29 +244,6 @@
         return swRegistrationPromise;
     }
 
-        async function waitForAndroidInstallWithRetry(maxWaitMs) {
-        const started = Date.now();
-        while (Date.now() - started < maxWaitMs) {
-            if (deferredPrompt) {
-                return deferredPrompt;
-            }
-            await ensureServiceWorker();
-            if (CONFIG.injectManifest) {
-                injectManifest();
-            }
-            const remaining = maxWaitMs - (Date.now() - started);
-            if (remaining <= 0) {
-                break;
-            }
-            await waitForInstallPrompt(Math.min(remaining, 5000));
-            if (deferredPrompt) {
-                return deferredPrompt;
-            }
-            await new Promise((resolve) => setTimeout(resolve, 400));
-        }
-        return deferredPrompt;
-    }
-
         function prepareAndroidInstall() {
         if (!isAndroid() || !isSecureContext() || isInAppBrowser()) {
             return Promise.resolve(deferredPrompt);
@@ -293,26 +270,56 @@
         return androidInstallReadyPromise;
     }
 
+        function shouldShowBanner(opts) {
+        if (isStandalone() && !isTestMode()) {
+            return false;
+        }
+        if (isBannerDismissed() && !isTestMode() && !(opts && opts.forceShow)) {
+            return false;
+        }
+        if (!isDomainAllowed()) {
+            return false;
+        }
+        return true;
+    }
+
+        function showBannerWhenReady(opts) {
+        if (!shouldShowBanner(opts)) {
+            return;
+        }
+        if (document.getElementById(CONFIG.bannerId)) {
+            refreshInstallButtonState();
+            return;
+        }
+
+        const isAndroidInstallable = isAndroid() && !isInAppBrowser() && isSecureContext();
+
+        if (isAndroidInstallable) {
+            if (deferredPrompt) {
+                createBanner();
+                return;
+            }
+            prepareAndroidInstall().then(() => {
+                if (deferredPrompt && shouldShowBanner(opts)) {
+                    createBanner();
+                }
+            });
+            return;
+        }
+
+        const showBannerDelay = isIOS() ? 500 : 1000;
+        setTimeout(() => {
+            if (shouldShowBanner(opts) && !document.getElementById(CONFIG.bannerId)) {
+                createBanner();
+            }
+        }, showBannerDelay);
+    }
         function refreshInstallButtonState() {
         const installBtn = document.getElementById('pwa-install-button');
         if (!installBtn || !isAndroid()) {
             return;
         }
         if (installBtn.dataset.loading === 'true') {
-            return;
-        }
-        if (deferredPrompt) {
-            installBtn.disabled = false;
-            installBtn.style.opacity = '1';
-            installBtn.style.cursor = 'pointer';
-            installBtn.innerHTML = getLocalizedText('androidInstallText') || getLocalizedText('installText') || 'Install';
-            return;
-        }
-        if (isSecureContext() && !isInAppBrowser() && androidInstallReadyPromise) {
-            installBtn.innerHTML = getLocalizedText('androidPreparing') || 'Preparing…';
-            installBtn.disabled = true;
-            installBtn.style.opacity = '0.85';
-            installBtn.style.cursor = 'wait';
             return;
         }
         installBtn.innerHTML = getLocalizedText('androidInstallText') || getLocalizedText('installText') || 'Install';
@@ -598,15 +605,7 @@
         
         const installBtn = document.createElement('button');
         installBtn.id = 'pwa-install-button';
-        const androidWaiting = isAndroid() && !isInAppBrowser() && isSecureContext() && !deferredPrompt;
-        installBtn.innerHTML = androidWaiting
-            ? (getLocalizedText('androidPreparing') || 'Preparing…')
-            : (getLocalizedText('installText') || 'Install');
-        if (androidWaiting) {
-            installBtn.disabled = true;
-            installBtn.style.opacity = '0.85';
-            installBtn.style.cursor = 'wait';
-        }
+        installBtn.innerHTML = getLocalizedText('installText') || 'Install';
         installBtn.style.cssText = `
             font-size: 13px;
             font-weight: 600;
@@ -629,13 +628,6 @@
             installBtn.style.boxShadow = 'none';
         });
         installBtn.addEventListener('click', handleInstallClick);
-
-        if (isAndroid() && !isInAppBrowser() && isSecureContext()) {
-            refreshInstallButtonState();
-            prepareAndroidInstall().then(() => {
-                refreshInstallButtonState();
-            });
-        }
 
         banner.appendChild(closeBtn);
         banner.appendChild(content);
@@ -680,15 +672,14 @@
                 return;
             }
 
-            if (!isSecureContext()) {
-                showAndroidInstallUnavailable();
-                return;
-            }
-
             setInstallButtonLoading(true);
             try {
                 if (!deferredPrompt) {
-                    await waitForAndroidInstallWithRetry(CONFIG.installPromptWaitMs || 20000);
+                    await ensureServiceWorker();
+                    if (CONFIG.injectManifest) {
+                        injectManifest();
+                    }
+                    await waitForInstallPrompt(CONFIG.installPromptWaitMs || 20000);
                 }
 
                 if (deferredPrompt) {
@@ -700,10 +691,7 @@
                     } else if (outcome === 'dismissed') {
                         showSuccessMessage(getLocalizedText('installDeclined'));
                     }
-                    return;
                 }
-
-                console.warn('PWA Install Banner: Install prompt not ready — tap Install again shortly');
             } finally {
                 setInstallButtonLoading(false);
             }
@@ -1070,16 +1058,18 @@
         deferredPrompt = e;
         notifyInstallPromptWaiters(e);
         console.log('PWA Install Banner: beforeinstallprompt event received - native install available');
-        refreshInstallButtonState();
-        if (isInitialized && isDomainAllowed() && !isStandalone()) {
-            createBanner();
-            if (CONFIG.autoTriggerInstall) {
-                setTimeout(() => {
-                    if (deferredPrompt && document.getElementById(CONFIG.bannerId)) {
-                        handleInstallClick();
-                    }
-                }, CONFIG.autoTriggerDelay || 2000);
+        if (!isStandalone() && isDomainAllowed() && !isBannerDismissed()) {
+            if (!document.getElementById(CONFIG.bannerId)) {
+                createBanner();
             }
+            refreshInstallButtonState();
+        }
+        if (CONFIG.autoTriggerInstall && deferredPrompt && document.getElementById(CONFIG.bannerId)) {
+            setTimeout(() => {
+                if (deferredPrompt && document.getElementById(CONFIG.bannerId)) {
+                    handleInstallClick();
+                }
+            }, CONFIG.autoTriggerDelay || 2000);
         }
     }
 
@@ -1157,23 +1147,7 @@
             console.log('PWA Install Banner: Native install prompt already captured before init');
         }
 
-        
-        
-        
-        const showBannerDelay = isIOS() ? 500 : 1000;
-        
-        setTimeout(() => {
-            if (!document.getElementById(CONFIG.bannerId)) {
-                
-                const shouldShow = !isStandalone() && (!isBannerDismissed() || opts.forceShow);
-                if (shouldShow) {
-                    console.log('PWA Install Banner: Showing banner (language:', getLang() + ')');
-                    createBanner();
-                } else {
-                    console.log('PWA Install Banner: Banner not shown - dismissed:', isBannerDismissed(), 'standalone:', isStandalone());
-                }
-            }
-        }, showBannerDelay);
+        showBannerWhenReady(opts);
 
         
         window.addEventListener('appinstalled', () => {
