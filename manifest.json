@@ -3,6 +3,7 @@
   "short_name": "MachiBet",
   "description": "Sports app, Entertainment app. Play anytime, anywhere",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#016ecf",

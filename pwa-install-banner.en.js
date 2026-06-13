@@ -3,7 +3,7 @@
     'use strict';
 
     
-    const SCRIPT_VERSION = '2.2.2-en';
+    const SCRIPT_VERSION = '2.3.0-en';
     
     
     const DEFAULT_CONFIG = {
@@ -15,8 +15,14 @@
         showIOSInstructions: true,
         autoTriggerInstall: false,
         autoTriggerDelay: 2000,
-        manifestUrl: 'https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/manifest.json',
+        // Same-origin manifest required for real Android PWA install (CDN manifest breaks start_url).
+        manifestUrl: null,
         injectManifest: true,
+        registerServiceWorker: true,
+        serviceWorkerUrl: '/sw.js',
+        installPromptWaitMs: 8000,
+        // Embed sites (m.mcb777): build manifest on current origin when /manifest.json is not hosted.
+        useDynamicManifest: false,
     };
 
     
@@ -31,7 +37,15 @@
             modalTitle: 'Install MachiBet App',
             modalIOSInstructions: 'Install on iOS:\n\n1. Tap the Share button (square with arrow ↑) at the bottom of Safari\n2. Scroll down in the share menu\n3. Tap "Add to Home Screen"\n4. Tap "Add" to confirm\n\nNote: iOS requires manual installation. Auto-install is not possible due to Apple security restrictions.',
             modalButtonText: 'I Understand',
-            modalCloseText: 'Close'
+            modalCloseText: 'Close',
+            androidPreparing: 'Preparing…',
+            androidInstallText: 'Install',
+            androidOpenInChromeTitle: 'Open in Chrome to Install',
+            androidOpenInChromeMessage: 'In-app browsers (Facebook, Telegram, etc.) cannot install apps.\n\n1. Tap the menu (⋮) or "..." at the top\n2. Choose "Open in Chrome" or "Open in browser"\n3. Return to this page and tap Install again\n\nChrome will show the official install dialog and add the app to your home screen.',
+            androidUnavailableTitle: 'Install Not Ready Yet',
+            androidUnavailableMessage: 'The official install prompt is not available on this browser yet.\n\nFor a real app on your home screen (not just a shortcut):\n• Use Chrome browser on Android\n• Make sure you are on HTTPS\n• Tap Install again after the page fully loads\n\nAvoid "Add to Home screen" from the browser menu unless Install does not work — that often creates a shortcut that opens inside the browser instead of as a standalone app.',
+            installSuccess: 'App installed! You can open MachiBet from your home screen.',
+            installDeclined: 'Install cancelled. You can tap Install again anytime.'
         },
         bn: {
             appName: 'MachiBet',
@@ -43,7 +57,15 @@
             modalTitle: 'MachiBet অ্যাপ ইনস্টল করুন',
             modalIOSInstructions: 'iOS এ ইনস্টল করুন:\n\n১. Safari এর নিচে শেয়ার বোতামে (তীর সহ বর্গক্ষেত্র ↑) ট্যাপ করুন\n২. শেয়ার মেনুতে নিচে স্ক্রল করুন\n৩. "হোম স্ক্রিনে যোগ করুন" ট্যাপ করুন\n৪. নিশ্চিত করতে "যোগ করুন" ট্যাপ করুন\n\nদ্রষ্টব্য: iOS-এ ম্যানুয়াল ইনস্টলেশন প্রয়োজন। Apple-এর নিরাপত্তা সীমাবদ্ধতার কারণে স্বয়ংক্রিয় ইনস্টল সম্ভব নয়।',
             modalButtonText: 'আমি বুঝেছি',
-            modalCloseText: 'বন্ধ করুন'
+            modalCloseText: 'বন্ধ করুন',
+            androidPreparing: 'প্রস্তুত হচ্ছে…',
+            androidInstallText: 'ইনস্টল',
+            androidOpenInChromeTitle: 'ইনস্টল করতে Chrome এ খুলুন',
+            androidOpenInChromeMessage: 'ইন-অ্যাপ ব্রাউজার (Facebook, Telegram ইত্যাদি) থেকে অ্যাপ ইনস্টল করা যায় না।\n\n১. উপরে মেনু (⋮) বা "..." ট্যাপ করুন\n২. "Open in Chrome" বা "Open in browser" বেছে নিন\n৩. এই পেজে ফিরে আবার ইনস্টল ট্যাপ করুন\n\nChrome অফিসিয়াল ইনস্টল ডায়ালগ দেখাবে এবং হোম স্ক্রিনে অ্যাপ যোগ করবে।',
+            androidUnavailableTitle: 'ইনস্টল এখনো প্রস্তুত নয়',
+            androidUnavailableMessage: 'এই ব্রাউজারে এখনো অফিসিয়াল ইনস্টল প্রম্পট পাওয়া যায়নি।\n\nহোম স্ক্রিনে সত্যিকারের অ্যাপের জন্য (শুধু শর্টকাট নয়):\n• Android এ Chrome ব্যবহার করুন\n• HTTPS সাইটে থাকুন\n• পেজ পুরো লোড হওয়ার পর আবার ইনস্টল ট্যাপ করুন\n\nইনস্টল কাজ না করলে ব্রাউজার মেনু থেকে "Add to Home screen" ব্যবহার করবেন না — সেটি প্রায়ই ব্রাউজারের ভিতরেই খোলে।',
+            installSuccess: 'অ্যাপ ইনস্টল হয়েছে! হোম স্ক্রিন থেকে MachiBet খুলতে পারবেন।',
+            installDeclined: 'ইনস্টল বাতিল হয়েছে। যেকোনো সময় আবার ইনস্টল ট্যাপ করতে পারেন।'
         }
     };
 
@@ -55,6 +77,9 @@
     let currentLang = 'en';
     let CONFIG = Object.assign({}, DEFAULT_CONFIG);
     let isInitialized = false;
+    let deferredPrompt = null;
+    let installPromptWaiters = [];
+    let swRegistrationPromise = null;
     
     
     console.log('PWA Install Banner Script v' + SCRIPT_VERSION + ' loaded');
@@ -143,6 +168,113 @@
         return /Android/.test(navigator.userAgent);
     }
 
+        function isInAppBrowser() {
+        const ua = navigator.userAgent || '';
+        if (/FBAN|FBAV|Instagram|Line\/|MicroMessenger|Twitter|Telegram|Snapchat|TikTok|wv\)/i.test(ua)) {
+            return true;
+        }
+        if (isAndroid() && /\; wv\;/.test(ua)) {
+            return true;
+        }
+        return false;
+    }
+
+        function isSecureContext() {
+        return window.isSecureContext === true;
+    }
+
+        function getManifestUrl() {
+        if (CONFIG.manifestUrl) {
+            try {
+                return new URL(CONFIG.manifestUrl, window.location.origin).href;
+            } catch (e) {
+                return CONFIG.manifestUrl;
+            }
+        }
+        return window.location.origin + '/manifest.json';
+    }
+
+        function notifyInstallPromptWaiters(event) {
+        const waiters = installPromptWaiters.slice();
+        installPromptWaiters = [];
+        waiters.forEach((resolve) => {
+            try {
+                resolve(event);
+            } catch (e) {
+                console.warn('PWA Install Banner: install prompt waiter failed', e);
+            }
+        });
+    }
+
+        function waitForInstallPrompt(timeoutMs) {
+        if (deferredPrompt) {
+            return Promise.resolve(deferredPrompt);
+        }
+        return new Promise((resolve) => {
+            const timer = setTimeout(() => {
+                resolve(null);
+            }, timeoutMs);
+            installPromptWaiters.push((event) => {
+                clearTimeout(timer);
+                resolve(event);
+            });
+        });
+    }
+
+        function ensureServiceWorker() {
+        if (!CONFIG.registerServiceWorker || !('serviceWorker' in navigator)) {
+            return Promise.resolve(false);
+        }
+        if (swRegistrationPromise) {
+            return swRegistrationPromise;
+        }
+        swRegistrationPromise = navigator.serviceWorker.register(CONFIG.serviceWorkerUrl || '/sw.js', { scope: '/' })
+            .then((registration) => {
+                console.log('PWA Install Banner: Service worker registered', registration.scope);
+                return navigator.serviceWorker.ready.then(() => true);
+            })
+            .catch((error) => {
+                console.warn('PWA Install Banner: Service worker registration failed, trying blob fallback', error);
+                return registerBlobServiceWorker();
+            });
+        return swRegistrationPromise;
+    }
+
+        function setInstallButtonLoading(isLoading) {
+        const installBtn = document.getElementById('pwa-install-button');
+        if (!installBtn) {
+            return;
+        }
+        if (isLoading) {
+            installBtn.dataset.originalText = installBtn.innerHTML;
+            installBtn.innerHTML = getLocalizedText('androidPreparing') || 'Preparing…';
+            installBtn.disabled = true;
+            installBtn.style.opacity = '0.85';
+            installBtn.style.cursor = 'wait';
+        } else {
+            installBtn.innerHTML = installBtn.dataset.originalText || getLocalizedText('androidInstallText') || getLocalizedText('installText') || 'Install';
+            installBtn.disabled = false;
+            installBtn.style.opacity = '1';
+            installBtn.style.cursor = 'pointer';
+        }
+    }
+
+        async function runNativeInstallPrompt() {
+        if (!deferredPrompt) {
+            return null;
+        }
+        try {
+            deferredPrompt.prompt();
+            const choiceResult = await deferredPrompt.userChoice;
+            deferredPrompt = null;
+            return choiceResult.outcome;
+        } catch (error) {
+            console.warn('PWA Install Banner: native install prompt failed', error);
+            deferredPrompt = null;
+            return null;
+        }
+    }
+
         function isBannerDismissed() {
         try {
             return localStorage.getItem(CONFIG.localStorageKey) === 'true';
@@ -173,6 +305,46 @@
         return manifestLink !== null;
     }
 
+        function buildDynamicManifest() {
+        const origin = window.location.origin;
+        const icon = CONFIG.logoUrl || (origin + '/favicon.ico');
+        return {
+            name: getLocalizedText('appName') || 'MachiBet',
+            short_name: getLocalizedText('appName') || 'MachiBet',
+            description: 'Sports app, Entertainment app. Play anytime, anywhere',
+            start_url: origin + '/',
+            scope: origin + '/',
+            display: 'standalone',
+            background_color: '#ffffff',
+            theme_color: '#016ecf',
+            orientation: 'portrait-primary',
+            icons: [
+                { src: icon, sizes: '192x192', type: 'image/png', purpose: 'any' },
+                { src: icon, sizes: '512x512', type: 'image/png', purpose: 'any' },
+                { src: icon, sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+            ],
+            prefer_related_applications: false
+        };
+    }
+
+        function registerBlobServiceWorker() {
+        const swCode = [
+            "self.addEventListener('install', function(e) { self.skipWaiting(); });",
+            "self.addEventListener('activate', function(e) { e.waitUntil(self.clients.claim()); });",
+            "self.addEventListener('fetch', function(e) { e.respondWith(fetch(e.request).catch(function() { return Response.error(); })); });"
+        ].join('\n');
+        const blob = new Blob([swCode], { type: 'application/javascript' });
+        const url = URL.createObjectURL(blob);
+        return navigator.serviceWorker.register(url, { scope: '/' }).then(function(reg) {
+            console.log('PWA Install Banner: Blob service worker registered (embed fallback)');
+            return reg.ready.then(function() { return true; });
+        }).catch(function(err) {
+            URL.revokeObjectURL(url);
+            console.warn('PWA Install Banner: Blob service worker failed', err);
+            return false;
+        });
+    }
+
         function injectManifest() {
         
         let viewportMeta = document.querySelector('meta[name="viewport"]');
@@ -201,8 +373,13 @@
             document.head.appendChild(manifestLink);
         }
         
-        if (CONFIG.manifestUrl) {
-            manifestLink.href = CONFIG.manifestUrl + '?v=' + Date.now();
+        if (CONFIG.manifestUrl || CONFIG.injectManifest) {
+            if (CONFIG.useDynamicManifest) {
+                const blob = new Blob([JSON.stringify(buildDynamicManifest())], { type: 'application/manifest+json' });
+                manifestLink.href = URL.createObjectURL(blob);
+            } else {
+                manifestLink.href = getManifestUrl() + '?v=' + SCRIPT_VERSION.replace(/\./g, '');
+            }
         }
 
         
@@ -216,7 +393,7 @@
     }
 
         function hasServiceWorker() {
-        return 'serviceWorker' in navigator && navigator.serviceWorker.controller !== null;
+        return 'serviceWorker' in navigator;
     }
 
         function hasPWACapabilities() {
@@ -395,47 +572,101 @@
         }
     }
 
-        let deferredPrompt = null;
-
-    function handleInstallClick() {
-        if (deferredPrompt) {
-            
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then((choiceResult) => {
-                if (choiceResult.outcome === 'accepted') {
-                    console.log('User accepted the install prompt');
-                    hideBanner();
-                    dismissBanner();
-                }
-                deferredPrompt = null;
-            });
-        } else if (isIOS()) {
-            
-            
-            
+    async function handleInstallClick() {
+        if (isIOS()) {
             if (CONFIG.showIOSInstructions) {
-                
-                
                 showIOSInstallGuide();
             }
-        } else {
-            
-            if (hasPWACapabilities()) {
-                
-                
-                console.log('PWA Install Banner: Site has PWA capabilities but prompt not available yet');
-                showManualInstallInstructions(true); 
-            } else if (isTestMode()) {
-                showTestInstallPrompt();
-            } else {
-                
-                showManualInstallInstructions(false);
+            return;
+        }
+
+        if (isAndroid()) {
+            if (isInAppBrowser()) {
+                showOpenInChromeGuide();
+                return;
             }
+
+            if (!isSecureContext()) {
+                showAndroidInstallUnavailable();
+                return;
+            }
+
+            setInstallButtonLoading(true);
+            try {
+                if (deferredPrompt) {
+                    const outcome = await runNativeInstallPrompt();
+                    if (outcome === 'accepted') {
+                        hideBanner();
+                        dismissBanner();
+                        showSuccessMessage(getLocalizedText('installSuccess'));
+                    } else if (outcome === 'dismissed') {
+                        showSuccessMessage(getLocalizedText('installDeclined'));
+                    }
+                    return;
+                }
+
+                await ensureServiceWorker();
+
+                const promptEvent = await waitForInstallPrompt(CONFIG.installPromptWaitMs || 8000);
+                if (promptEvent) {
+                    deferredPrompt = promptEvent;
+                    const outcome = await runNativeInstallPrompt();
+                    if (outcome === 'accepted') {
+                        hideBanner();
+                        dismissBanner();
+                        showSuccessMessage(getLocalizedText('installSuccess'));
+                    } else if (outcome === 'dismissed') {
+                        showSuccessMessage(getLocalizedText('installDeclined'));
+                    }
+                    return;
+                }
+
+                showAndroidInstallUnavailable();
+            } finally {
+                setInstallButtonLoading(false);
+            }
+            return;
+        }
+
+        if (deferredPrompt) {
+            const outcome = await runNativeInstallPrompt();
+            if (outcome === 'accepted') {
+                hideBanner();
+                dismissBanner();
+                showSuccessMessage(getLocalizedText('installSuccess'));
+            }
+            return;
+        }
+
+        if (hasPWACapabilities()) {
+            console.log('PWA Install Banner: PWA capable but install prompt not available yet');
+            showManualInstallInstructions(true);
+        } else if (isTestMode()) {
+            showTestInstallPrompt();
+        } else {
+            showManualInstallInstructions(false);
         }
     }
 
+        function showOpenInChromeGuide() {
+        createInstallModal({
+            title: getLocalizedText('androidOpenInChromeTitle'),
+            message: getLocalizedText('androidOpenInChromeMessage'),
+            buttonText: getLocalizedText('modalButtonText'),
+            onConfirm: () => {}
+        });
+    }
+
+        function showAndroidInstallUnavailable() {
+        createInstallModal({
+            title: getLocalizedText('androidUnavailableTitle'),
+            message: getLocalizedText('androidUnavailableMessage'),
+            buttonText: getLocalizedText('modalButtonText'),
+            onConfirm: () => {}
+        });
+    }
+
         function showTestInstallPrompt() {
-        
         if (deferredPrompt) {
             handleInstallClick();
             return;
@@ -780,8 +1011,11 @@
         
         
         if (CONFIG.injectManifest) {
-            
             injectManifest();
+        }
+
+        if (CONFIG.registerServiceWorker && isSecureContext()) {
+            ensureServiceWorker();
         }
 
         
@@ -812,18 +1046,15 @@
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
+            notifyInstallPromptWaiters(e);
             
-            console.log('PWA Install Banner: beforeinstallprompt event received - third-party site has PWA capabilities!');
-            
+            console.log('PWA Install Banner: beforeinstallprompt event received - native install available');
             
             createBanner();
-            
-            
             
             if (CONFIG.autoTriggerInstall) {
                 setTimeout(() => {
                     if (deferredPrompt && document.getElementById(CONFIG.bannerId)) {
-                        
                         handleInstallClick();
                     }
                 }, CONFIG.autoTriggerDelay || 2000);
@@ -912,6 +1143,9 @@
     
     
     setTimeout(function() {
+        if (window.__PWA_BANNER_DEFER_AUTO_INIT) {
+            return;
+        }
         if (!isInitialized) {
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', function() {

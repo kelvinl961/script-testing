@@ -7,10 +7,10 @@
 <!-- ============================================ -->
 
 <!-- For English Version -->
-<script src="https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/pwa-install-banner.en.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/pwa-install-banner.en.js?v=2.3.0"></script>
 
 <!-- OR For Bengali Version -->
-<script src="https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/pwa-install-banner.bn.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/pwa-install-banner.bn.js?v=2.3.0"></script>
 
 <!-- ============================================ -->
 <!-- OPTION 2: Use Main Script with Language Setting -->
@@ -37,8 +37,9 @@
 </script>
 
 <!-- ============================================ -->
-<!-- RECOMMENDED: Use Separate Scripts -->
+<!-- OPTION 3: m.mcb777 / m.mcb177 bootstrap (auto lang + dynamic manifest) -->
 <!-- ============================================ -->
+<script src="https://cdn.jsdelivr.net/gh/kelvinl961/script-testing@main/pwa.js?v=2.3.0"></script>
 <!-- 
   Benefits:
   - Simpler (no init() needed)
